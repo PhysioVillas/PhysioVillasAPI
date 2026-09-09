@@ -1,152 +1,349 @@
-# Backlog do Projeto — PhysioVilas WhatsApp
+# Backlog do Projeto — PhysioVilas ChatManager
 
-**Última atualização:** 2026-08-18
+**Última atualização:** 2026-09-09
+**Escopo deste documento:** reestruturação para **Infobip + Neon**, backend
+enxuto sem frontend, sem bot próprio, sem autenticação. Detalhamento técnico
+completo em `PRD_PhysioVilas_WhatsApp.md`.
 
-Este backlog substitui a seção de tickets que antes vivia no PRD
-(`PRD_PhysioVilas_WhatsApp.md`, seção "Tickets de Desenvolvimento"). Ele é
-organizado por equipe/frente de trabalho, na ordem em que o projeto deve
-avançar:
+Estrutura seguida a partir desta atualização: **cronograma da Entrega 2**
+definido pela gestão de projeto, organizado em 4 atividades (`AT1`–`AT4`).
+Dentro de cada atividade, os tickets mantêm os prefixos técnicos já usados
+neste backlog (`SET`/`DB`/`API`/`AUT`/`PM`/`DOC`).
 
-1. **Integração** (APIs da Meta)
-2. **Backend**
-3. **Frontend**
-4. **Banco de Dados / Persistência** — última fase, junto com Dashboards
-
-Cada ticket tem um ID prefixado pela equipe. Tickets marcados com 🔴 são
-bloqueantes para o restante da frente; 🟡 exige pesquisa/spike antes de
-poder ser estimado.
-
----
-
-## 1. Integração (APIs da Meta / Cloud API)
-
-Responsável por tudo que fala diretamente com o Graph API / Cloud API da
-Meta: envio, recebimento, templates, automações no nível de protocolo.
-
-### Concluído
-- [x] INT-00a — Setup do App Meta, número de teste, token de acesso, webhook configurado (`GET`/`POST /webhook`).
-- [x] INT-00b — Envio de texto livre (`sendTextMessage`) e template básico (`sendTemplateMessage`) via `services/meta.js`.
-- [x] INT-00c — Recebimento e parsing de mensagens de texto (`parser.js`).
-
-### Backlog
-- [ ] **INT-01 — Ativar número de produção** 🔴 bloqueante
-  Sair do número de teste da Meta e configurar o número real da clínica (ou
-  o número novo dedicado, conforme recomendação do PRD) no Business
-  Manager. Sem isso, o resto da integração (mídia, templates, automações)
-  só pode ser validado no número de teste, que tem limitações de
-  destinatários e de volume.
-- [ ] **INT-02 — Envio e recebimento de mídia (fotos/vídeos)**
-  - Enviar: novo método em `services/meta.js` para `image`/`video` (por
-    link ou upload via Media API).
-  - Receber: hoje `parser.js` só gera `[imagem]`/`[vídeo]` como
-    placeholder — implementar download do arquivo via Media API da Meta (a
-    URL de mídia expira e exige o token de acesso) e definir como isso fica
-    disponível para backend/frontend.
-- [ ] **INT-03 — Status de leitura e entrega**
-  - Marcar mensagem recebida como lida (`POST /messages` com
-    `status: read` no Graph API).
-  - Parsear `value.statuses` para `sent`/`delivered`/`read` (hoje só
-    `failed` é tratado — ver `parseMetaStatusFailures` em `parser.js`).
-- [ ] **INT-04 — Spike: Templates de mensagem** 🟡 requer pesquisa
-  Entender categorias (utility/marketing/authentication), fluxo de
-  aprovação pela Meta, variáveis de componente e limites de uso. Resultado
-  esperado: documentação curta (nos moldes de `META_CLOUD_API_RULES.md`) +
-  endpoint para criar/listar templates via Graph API.
-- [ ] **INT-05 — Mensagens interativas para o menu de navegação**
-  Avaliar se o menu "digite 1 a 5" (agendar consulta, acessar exame, falar
-  com atendimento etc.) deve ser texto simples numerado ou usar o tipo
-  `interactive` (List Message / Reply Buttons) da Cloud API. Depende de
-  INT-04 se a primeira mensagem do fluxo for iniciada pela empresa fora da
-  janela de 24h (nesse caso precisa ser template).
+> **Nota sobre IDs duplicados no cronograma original:** o cronograma da
+> gestão reaproveita os códigos `SET-04` e `SET-05` em pontos diferentes
+> (uma vez em `AT1`, outra em `AT2`/`AT3`) para assuntos distintos. Para
+> evitar ambiguidade neste documento técnico, esses IDs foram renumerados
+> abaixo — cada ticket abaixo carrega uma nota `(cronograma: ...)` apontando
+> o item correspondente na lista original da gestão.
 
 ---
 
-## 2. Backend
+## Como este backlog funciona
 
-Responsável por expor as capacidades da Integração como rotas/eventos
-consumíveis pelo frontend, e pela lógica de automação.
+**Frentes de trabalho** (prefixo do ID):
 
-### Concluído
-- [x] BACK-00a — `GET /conversations`, `GET /messages`, `POST /messages`, `POST /messages/template`.
-- [x] BACK-00b — Broadcast via Socket.io (`new-message`, `message-failed`).
-- [x] BACK-00c — `GET /health` (anti cold start Render).
+| Prefixo | Frente | O que cobre |
+|---|---|---|
+| `SET` | Setup & Infra | Infobip, Neon, deploy na Vercel |
+| `DB`  | Banco de Dados | Schema no Neon, roles de acesso |
+| `API` | Backend | Webhook, envio de mensagens, health check |
+| `AUT` | Automações | Templates e fluxos configurados na Infobip (aprovação, coexistência ativa) |
+| `PM`  | Gestão de Projeto | Jira, sprints, cards |
+| `BI`  | Power BI | Conexão e relatórios sobre o Neon |
+| `DOC` | Documentação | Documentos entregáveis |
 
-### Backlog
-- [ ] **BACK-01 — Endpoint de envio de mídia**
-  `POST /messages/media` (ou equivalente), usando o service de INT-02.
-  Validar tipo/tamanho antes de chamar a Meta.
-- [ ] **BACK-02 — Evento de status de leitura/entrega**
-  Novo evento Socket.io (`message-status`) emitido a partir do parsing de
-  INT-03, para o frontend renderizar os checkmarks.
-- [ ] **BACK-03 — Notificação ao receber mensagem**
-  Definir escopo antes de estimar: se for notificação no navegador (Web
-  Notification API) com o app aberto, o evento `new-message` que já existe
-  é suficiente e a implementação fica só no Frontend (ver FRONT-04). Se
-  precisar funcionar com o app fechado (Web Push), aí sim entra backend
-  (service worker + push subscription).
-- [ ] **BACK-04 — Motor de automação de mensagens**
-  Depende de INT-05 estar definido. Sugestão de quebra:
-  - BACK-04a — modelo de fluxo (config/JSON) para o menu de opções 1–5 e a
-    ação associada a cada opção.
-  - BACK-04b — processamento da resposta do paciente (número digitado ou
-    id do botão/lista) e disparo da ação (encaminhar para atendimento
-    humano, responder FAQ, etc.).
-  - BACK-04c — CRUD de FAQs configuráveis pelo usuário (endpoint para
-    cadastrar pergunta/resposta usadas na triagem inicial).
-- [ ] **BACK-05 — Endpoint de gestão de templates**
-  Expor o que for implementado em INT-04 (criar/listar templates) para o
-  painel, sem depender do Business Manager da Meta.
+**Marcadores:** 🔴 bloqueia outros tickets · 🟡 exige pesquisa/confirmação
+antes de codar
+
+**Definição de Pronto (vale para todo ticket):**
+
+1. Critérios de aceite satisfeitos e testados manualmente.
+2. `node --check` sem erros nos arquivos alterados (sem build/bundler no projeto).
+3. Nenhum segredo commitado; variável nova documentada em `.env.example`.
+4. Se cria ou altera rota: bloco `@openapi` atualizado e visível em `/docs`.
 
 ---
 
-## 3. Frontend
+## Ordem de ataque
 
-### Sem dependência de outra equipe
-- [ ] **FRONT-01 — Layout completo do site**
-  Sidebar, navegação entre telas, design system do protótipo
-  (`--primary: #055BAA`, `--accent: #EA7E26`, cards brancos, fundo
-  `#F8F9FA`).
-- [ ] **FRONT-02 — Tela de conversas**
-  Lista de chats (esquerda) + janela de chat (direita), consumindo
-  `GET /conversations`, `GET /messages` e o evento `new-message` via
-  `socket.io-client`.
-- [ ] **FRONT-03 — Ícones/avatares dos usuários**
-  A Cloud API não envia foto de perfil de contato (confirmado — só manda
-  `profile.name`). Gerar avatar por iniciais do nome + cor derivada do
-  `wa_id`, não esperar uma URL de imagem vinda do backend.
+```
+AT1 — Setup inicial e integração com a Infobip
+   SET-01 ──► SET-02 ──► SET-03 ──► SET-04 (coexistência, confirmação) ──► SET-05 (templates) ──► DOC-01
 
-### Depende de Integração/Backend
-- [ ] **FRONT-04 — Notificação ao receber mensagem**
-  Browser Notification API disparada ao chegar `new-message` (ver nota de
-  escopo em BACK-03).
-- [ ] **FRONT-05 — Envio e exibição de fotos/vídeos no chat** — depende de INT-02/BACK-01.
-- [ ] **FRONT-06 — Indicador de status de leitura (checkmarks)** — depende de INT-03/BACK-02.
-- [ ] **FRONT-07 — Tela de configuração de FAQs / automação** (cadastro das perguntas frequentes e do menu de navegação) — depende de BACK-04.
-- [ ] **FRONT-08 — Tela de criação de templates** — depende de INT-04/BACK-05.
+AT2 — Backend de mensageria e gestão do projeto
+   PM-01 ──► PM-02 ──► PM-03           (gestão, em paralelo ao backend)
+   API-01 ──► API-02 ──► API-03 ──► API-04 (agendamento) ──► API-05 (Swagger)
+   SET-06 — banco provisório + publicação na Vercel (DB-01/DB-02 + SET-02/SET-03 de infra)
+
+AT3 — Automações de atendimento e coexistência
+   AUT-01 (templates aprovados) ──► AUT-02 (triagem) ──► AUT-03 (FAQ) ──► AUT-04 (lembretes)
+   SET-07 — ativar coexistência API + WhatsApp Business App em produção
+
+AT4 — Entrega do Pacote 2
+   DOC-02, DOC-03, homologação final
+```
 
 ---
 
-## 4. Banco de Dados / Persistência — última fase
+## AT1 — Setup inicial e integração com a Infobip
 
-Implementado por último, junto com os Dashboards (que dependem de dados
-históricos persistidos — hoje tudo é perdido a cada redeploy;
-`services/store.js` é um array em memória capado em 200 mensagens).
+### SET-01 — Obter número de teste na Infobip (sandbox WhatsApp) — ✅ 100%
 
-- [ ] **DB-01 — Modelagem do banco**
-  Schema para mensagens, conversas, contatos, templates e FAQs (as duas
-  últimas só fazem sentido depois que INT-04 e BACK-04c existirem).
-- [ ] **DB-02 — Migração do store em memória para persistência real**
-  Substituir `services/store.js` mantendo a mesma interface (`addMessage`,
-  `listMessages`, `listConversations`) para não quebrar rotas/eventos
-  existentes.
-- [ ] **DB-03 — Dashboards**
-  Métricas agregadas (conversas por dia, tempo médio de resposta, etc.) —
-  depende diretamente de DB-01/DB-02.
+- [x] Número de teste/sandbox WhatsApp obtido na Infobip
+
+### SET-02 — Configuração inicial da conta/canal (API key, base URL, sender) — ✅ 100%
+
+- [x] `INFOBIP_BASE_URL` e `INFOBIP_API_KEY` obtidos e guardados fora do repo
+- [x] Sender/canal WhatsApp configurado na conta
+
+### SET-03 — Teste inicial de envio de mensagem via API — ✅ 100%
+
+- [x] Endpoint e payload de envio de texto livre confirmados contra a conta real
+
+### SET-04 — Confirmar rota e fluxo de coexistência com WhatsApp Web (`smb_message_echoes`) — ✅ 100%
+
+*(cronograma: `AT1 / SET-04`)*
+
+Feature essencial: a clínica só migra se puder manter o app do celular
+funcionando no mesmo número. Já confirmado via documentação pública
+(`PRD_PhysioVilas_WhatsApp.md` seção 4.3) que a Infobip suporta isso via
+Embedded Signup.
+
+- [x] Onboarding de coexistência testado na conta real (Embedded Signup com
+      `featureType: whatsapp_business_app_onboarding`, ou fluxo pelo console)
+- [x] Payload real do webhook `smb_message_echoes` capturado (mensagem
+      enviada pelo celular gera esse evento)
+- [x] Campo discriminador identificado — como diferenciar, no mesmo endpoint
+      de webhook, entre mensagem recebida normal / status / eco de
+      coexistência / chunk de histórico
+- [x] Achados incorporados em `docs/INFOBIP_RULES.md` (consolidar em `DOC-01`)
+
+### SET-05 — Teste inicial do uso de templates — ⬜ 0%
+
+*(cronograma: `AT1 / SET-05`. Corresponde ao antigo ticket "validar payload
+de agendamento"; a validação de `sendAt`/agendamento foi movida para `API-04`
+em `AT2`, já que depende do backend existir.)*
+
+- [ ] Ao menos um template aprovado enviado com sucesso via API contra a conta real
+- [ ] Formato exato de `content` para envio de **template** via Messages API
+      confirmado (pesquisa prévia encontrou exemplos inconsistentes, nenhum
+      confirmado)
+- [ ] Confirmado se a resposta de `POST /messages-api/1/messages` retorna um
+      `messageId` por item de `destinations` (uso futuro: `infobip_message_id`
+      para idempotência em `DB-01`)
+- [ ] Confirmado formato de erro da Messages API (número inválido, fora da
+      janela de 24h, template rejeitado)
+- [ ] Achados incorporados em `docs/INFOBIP_RULES.md`
+
+- **Depende de:** SET-01, SET-02, SET-03
+- **Bloqueia:** API-03 (formato de template no envio)
+
+### DOC-01 — Documentar regras de integração da Infobip (`docs/INFOBIP_RULES.md`) — ⬜ 0%
+
+- [ ] Documenta os achados de `SET-01`, `SET-04`, `SET-05`, no mesmo espírito
+      do antigo `META_CLOUD_API_RULES.md`
+- [ ] Payload real de webhook de mensagem recebida
+- [ ] Payload de atualização de status (`DELIVERED`/`READ`/`FAILED`)
+- [ ] Formato do identificador do remetente (`wa_id`/número: com ou sem `+`,
+      com ou sem 9º dígito) — **não presumir formato Meta**, verificar contra
+      payload real
+- [ ] Mecanismo de segurança do webhook (assinatura, IP allowlist, Basic Auth,
+      ou nenhum)
+- [ ] Como a Infobip sinaliza erro de janela de 24h
+- [ ] Cada regra marcada como confirmada (com link pro código, quando
+      aplicável) ou pendente
+
+- **Depende de:** SET-01, SET-04, SET-05
 
 ---
 
-## Ordem sugerida entre equipes
+## AT2 — Backend de mensageria e gestão do projeto
 
-Integração (INT-01 primeiro, é bloqueante) → Backend consome o que a
-Integração expõe → Frontend consome o que o Backend expõe → Banco de
-Dados/Persistência e Dashboards por último, sobre o histórico real de uso.
+### PM-01 — Criar projeto no Jira e importar a estrutura do backlog — ⬜ 0%
+
+- [ ] Projeto criado no Jira
+- [ ] Tickets deste backlog (`SET`/`DB`/`API`/`AUT`/`DOC`) importados como issues
+
+### PM-02 — Planejar sprints (mapear tarefas em ciclos com datas) — ⬜ 0%
+
+- [ ] Tickets de `AT2`–`AT4` distribuídos em sprints com datas
+- **Depende de:** PM-01
+
+### PM-03 — Criar cards por ticket com critérios de conclusão e dependências — ⬜ 0%
+
+- [ ] Cada card no Jira reflete os critérios de aceite e dependências já
+      descritos neste backlog
+- **Depende de:** PM-01, PM-02
+
+### API-01 — Estruturação da base do backend com rota de verificação de funcionamento — ⬜ 0%
+
+- [ ] Express mínimo, ESM (`"type": "module"`), sem Socket.io
+- [ ] `src/index.js`, `src/routes/`, `src/services/`
+- [ ] `GET /health` funcionando
+- [ ] `.env.example` novo, sem nenhuma variável `META_*`/`TWILIO_*`/`SUPABASE_*`
+
+- **Depende de:** SET-01
+
+### SET-06 — Banco de dados provisório e publicação na Vercel — ⬜ 0%
+
+*(cronograma: `AT2 / SET-04` — reaproveita o código `SET-04` para "banco
+provisório + Vercel", diferente do `SET-04` de coexistência em `AT1`.
+Renumerado aqui para `SET-06` para evitar ambiguidade. Cobre o schema no
+Neon e o deploy do backend.)*
+
+- [ ] Projeto criado no Neon (via integração Vercel ou console próprio)
+- [ ] `DATABASE_URL` com `sslmode=require` documentada em `.env.example`
+- [ ] Comportamento de auto-suspend do free tier confirmado (latência após inatividade)
+- [ ] Tabela `contacts` (`wa_id`, `profile_name`, `last_message_at`)
+- [ ] Tabela `messages` (`id`, `infobip_message_id` único, `wa_id`, `direction`, `sent_via`, `body`, `message_type`, `status`, `error_code`, `created_at`)
+- [ ] `infobip_message_id` único garante idempotência em reentrega de webhook
+- [ ] `sent_via` (`api`/`business_app`) distingue mensagem enviada pelo backend
+      de eco de coexistência do celular
+- [ ] Todas as datas em `timestamptz`/UTC
+- [ ] Migration versionada no repo (SQL puro)
+- [ ] Role `powerbi_reader` criado, somente leitura (`grant select` +
+      `default privileges` para tabelas futuras)
+- [ ] Backend Express empacotado como função serverless na Vercel (sem Next.js)
+- [ ] Variáveis de ambiente configuradas em Production e Preview
+- [ ] Deploy automático a cada push na `main`
+
+- **Depende de:** SET-01, DOC-01 (formato do `wa_id`)
+- **Bloqueia:** API-02, BI-01
+
+### API-02 — Recepção e gravação de status/eventos da Infobip (Webhooks) — ⬜ 0%
+
+- [ ] Validação conforme mecanismo definido em `DOC-01`
+- [ ] Parser do payload real da Infobip → `Message`/`Contact`
+- [ ] Upsert de contato + insert idempotente de mensagem (por `infobip_message_id`)
+- [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
+      gravando com `direction: 'out'`, `sent_via: 'business_app'`
+- [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em
+      payloads não mapeados ainda
+- [ ] Confirma se o inbound da **Messages API** (usada em `API-03` para envio)
+      chega no mesmo formato do canal WhatsApp dedicado ou exige um segundo
+      formato de parser
+- [ ] Responde rápido (200 imediato), processamento não bloqueia a resposta
+- [ ] Payload desconhecido não derruba a rota — loga e segue
+- [ ] Bloco `@openapi` documentado
+
+- **Depende de:** SET-06, API-01, SET-04, SET-05
+
+### API-03 — Rotas para envio de mensagens de texto e templates — ⬜ 0%
+
+Ambas as rotas chamam o mesmo cliente da **Messages API**
+(`POST /messages-api/1/messages`) — não o canal WhatsApp dedicado. Ver
+`PRD_PhysioVilas_WhatsApp.md` seção 4.4.
+
+- [ ] Envio de texto livre via Messages API (`channel: "WHATSAPP"`, `content.body`)
+- [ ] Envio de template via Messages API — formato de `content` confirmado em `SET-05`
+- [ ] Erros da Infobip propagados com `status`/`details`
+- [ ] Mensagem enviada é gravada em `messages` com `direction: 'out'`, `sent_via: 'api'`
+- [ ] Bloco `@openapi` documentado
+
+- **Depende de:** SET-06, API-01, SET-05
+
+### API-04 — Funcionalidade de agendamento de envios futuros — ⬜ 0%
+
+Mecanismo confirmado (Messages API + `sendAt`, seção 4.2 do plano) — mesmo
+endpoint de `API-03`, com o campo `sendAt` preenchido. Não é uma rota
+separada `/messages/schedule`.
+
+- [ ] Campo `sendAt` opcional aceito nas rotas de `API-03` (envio imediato se ausente)
+- [ ] `sendAt` testado de ponta a ponta contra a conta real (mensagem chega no horário agendado)
+- [ ] `messageId` de retorno usado como `infobip_message_id` para idempotência
+- [ ] Confirmado limite de `sendAt` para WhatsApp especificamente (180 dias é
+      o limite documentado para outros canais, ex: SMS — não confirmado ainda
+      para WhatsApp)
+- [ ] Erros e limites de janela (tempo mínimo/máximo no futuro) tratados
+- [ ] Bloco `@openapi` atualizado com o parâmetro `sendAt`
+
+- **Depende de:** API-03
+
+### API-05 — Documentação interativa das APIs (Swagger) — ⬜ 0%
+
+- [ ] Swagger UI servido em `/docs`, spec em `/docs.json`
+- [ ] `info.description` explicando o formato do `wa_id` confirmado em `DOC-01`
+
+- **Depende de:** API-02, API-03
+
+---
+
+## AT3 — Automações de atendimento e coexistência
+
+> Fluxos de bot/FAQ/triagem **não são código neste repositório** — são
+> configurados na plataforma Infobip. Os tickets abaixo cobrem a configuração
+> na plataforma e a validação de que os fluxos funcionam, não implementação
+> de backend.
+
+### AUT-01 — Aprovar todos os templates na Infobip — ⬜ 0%
+
+- [ ] Todos os templates necessários (lembrete de consulta, confirmações, etc.) submetidos para aprovação
+- [ ] Todos aprovados pela Meta/Infobip
+
+### AUT-02 — Concluir fluxo de triagem (menu de atendimento) — ⬜ 0%
+
+- [ ] Menu de triagem configurado na plataforma Infobip
+- [ ] Testado ponta a ponta com número real
+
+- **Depende de:** AUT-01
+
+### AUT-03 — Concluir fluxo de FAQ (Perguntas Frequentes) — ⬜ 0%
+
+- [ ] Fluxo de FAQ configurado na plataforma Infobip
+- [ ] Testado ponta a ponta com número real
+
+- **Depende de:** AUT-01
+
+### AUT-04 — Concluir sistema de lembrete de consultas — ⬜ 0%
+
+- [ ] Lembrete de consulta usando template aprovado (`AUT-01`) + agendamento (`API-04`)
+- [ ] Testado ponta a ponta (envio agendado chega no horário certo)
+
+- **Depende de:** AUT-01, API-04
+
+### SET-07 — Ativar coexistência API + WhatsApp Business App — ⬜ 0%
+
+*(cronograma: `AT3 / SET-05` — reaproveita o código `SET-05` para "ativar
+coexistência em produção", diferente do `SET-05` de "teste de templates" em
+`AT1`. Renumerado aqui para `SET-07` para evitar ambiguidade.)*
+
+- [ ] Coexistência ativada em produção na conta real (não apenas testada em sandbox, ver `SET-04`)
+- [ ] Confirmado que o app do celular continua funcionando normalmente após o
+      onboarding (throughput de 20 msg/s é o limite documentado)
+- [ ] Equipe da clínica orientada sobre o funcionamento
+
+- **Depende de:** SET-04, API-02 (webhook já tratando `smb_message_echoes` em produção)
+
+---
+
+## AT4 — Entrega do Pacote 2
+
+> Aguardando detalhamento da gestão de projeto sobre os critérios finais de
+> entrega. Preencher conforme definido.
+
+### DOC-02 — Atualizar `CLAUDE.md`
+
+- [ ] Reescrever para refletir a arquitetura Infobip + Neon + Vercel serverless
+- [ ] Remover toda referência a Meta Cloud API, Socket.io, Twilio, Supabase, Next.js
+
+- **Depende de:** API-01 a API-05 (arquitetura estabilizada)
+
+### DOC-03 — Atualizar `README.md`
+
+- [ ] Comandos, variáveis de ambiente e arquitetura atuais
+- [ ] Removida qualquer instrução do backend antigo
+
+- **Depende de:** DOC-02
+
+---
+
+## Frente BI — Power BI (fora da numeração AT, corre em paralelo)
+
+### BI-01 — Conexão do Power BI ao Neon — ⬜ 0%
+
+- [ ] Conector nativo "PostgreSQL database" configurado com `powerbi_reader`
+- [ ] SSL habilitado na conexão
+- [ ] Decidido e documentado: refresh manual (Desktop) vs. gateway (Service)
+- [ ] Ao menos um relatório básico validando a conexão (ex: volume de mensagens por dia)
+
+- **Depende de:** SET-06, API-02 (precisa haver dados reais fluindo)
+
+---
+
+## Itens descartados nesta reestruturação
+
+Registrados para rastreabilidade — não serão feitos.
+
+| Item | Motivo |
+|---|---|
+| Frontend Next.js / landing page / painel de atendimento | Fora de escopo: Infobip cobre canal/FAQ, Power BI cobre consulta |
+| Fluxo de bot, FAQ, triagem no código | Configurado na plataforma Infobip (ver `AT3`) |
+| Autenticação / login / RLS | Sem usuários no escopo atual |
+| Socket.io / tempo real | Sem painel para atualizar |
+| Supabase (Auth, Realtime, Postgres) | Substituído por Neon (só Postgres) |
+| Twilio | Substituído por Infobip |
+| `GET /conversations`, `GET /messages` | Leitura é feita pelo Power BI direto no Neon |
+| Rota `POST /whatsapp/1/events` como mecanismo de agendamento | Confirmado (OpenAPI público) que essa rota é só `TYPING_INDICATOR`, não agendamento |
+| Endpoint `POST /omni/1/advanced` como API de envio unificada | Endpoint mais antigo, de cenário de failover pré-configurado no painel — não relacionado à Messages API (`POST /messages-api/1/messages`) confirmada e usada neste projeto |
+| Cliente separado para o canal WhatsApp dedicado (`/whatsapp/1/message/*`) | Decisão: unificar todo envio (texto, template, agendado) na Messages API omnichannel — ver `PRD_PhysioVilas_WhatsApp.md` seção 4.4 |
