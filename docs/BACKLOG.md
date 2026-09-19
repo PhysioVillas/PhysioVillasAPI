@@ -1,6 +1,6 @@
 # Backlog do Projeto — PhysioVilas ChatManager
 
-**Última atualização:** 2026-09-09
+**Última atualização:** 2026-09-19
 **Escopo deste documento:** reestruturação para **Infobip + Neon**, backend
 enxuto sem frontend, sem bot próprio, sem autenticação. Detalhamento técnico
 completo em `PRD_PhysioVilas_WhatsApp.md`.
@@ -42,6 +42,13 @@ antes de codar
 2. `node --check` sem erros nos arquivos alterados (sem build/bundler no projeto).
 3. Nenhum segredo commitado; variável nova documentada em `.env.example`.
 4. Se cria ou altera rota: bloco `@openapi` atualizado e visível em `/docs`.
+
+> **Conciliação de status (2026-09-18):** o corte técnico do `API-01` foi
+> concluído localmente, mas o ticket continua **em andamento**. A exigência
+> geral de OpenAPI em `/docs` transfere trabalho para `API-05`, que depende de
+> `API-02` e `API-03`; essa incompatibilidade entre a Definition of Done e a
+> ordem de dependências precisa ser resolvida sem antecipar o escopo do
+> Swagger.
 
 ---
 
@@ -99,16 +106,22 @@ Embedded Signup.
       coexistência / chunk de histórico
 - [x] Achados incorporados em `docs/INFOBIP_RULES.md` (consolidar em `DOC-01`)
 
-### SET-05 — Teste inicial do uso de templates — ⬜ 0%
+### SET-05 — Teste inicial do uso de templates — 🔄 Em andamento
 
 *(cronograma: `AT1 / SET-05`. Corresponde ao antigo ticket "validar payload
 de agendamento"; a validação de `sendAt`/agendamento foi movida para `API-04`
 em `AT2`, já que depende do backend existir.)*
 
-- [ ] Ao menos um template aprovado enviado com sucesso via API contra a conta real
+- [x] Ao menos um template aprovado enviado com sucesso via API contra a conta
+      real: sandbox da API WhatsApp dedicada aceito com HTTP 200 e recebido no
+      número verificado do trial em 2026-09-18. Isso não confirma o payload da
+      Messages API adotada para produção.
 - [ ] Formato exato de `content` para envio de **template** via Messages API
       confirmado (pesquisa prévia encontrou exemplos inconsistentes, nenhum
       confirmado)
+- [x] Chave com o escopo `messages-api:message:send` criada e usada somente em
+      `POST /messages-api/1/messages/validate`: HTTP 200 em 2026-09-19, sem
+      enviar mensagem. A chave anterior respondeu HTTP 403 em 2026-09-18.
 - [ ] Confirmado se a resposta de `POST /messages-api/1/messages` retorna um
       `messageId` por item de `destinations` (uso futuro: `infobip_message_id`
       para idempotência em `DB-01`)
@@ -120,6 +133,11 @@ em `AT2`, já que depende do backend existir.)*
 - **Bloqueia:** API-03 (formato de template no envio)
 
 ### DOC-01 — Documentar regras de integração da Infobip (`docs/INFOBIP_RULES.md`) — ⬜ 0%
+
+> **Evidência em 2026-09-18:** `docs/INFOBIP_RULES.md` registra o primeiro
+> template sandbox aceito e recebido. Os contratos da Messages API, payloads e
+> segurança do webhook continuam como lacunas técnicas; os estados históricos
+> de `SET-01` a `SET-04` permanecem preservados.
 
 - [ ] Documenta os achados de `SET-01`, `SET-04`, `SET-05`, no mesmo espírito
       do antigo `META_CLOUD_API_RULES.md`
@@ -156,16 +174,22 @@ em `AT2`, já que depende do backend existir.)*
       descritos neste backlog
 - **Depende de:** PM-01, PM-02
 
-### API-01 — Estruturação da base do backend com rota de verificação de funcionamento — ⬜ 0%
+### API-01 — Estruturação da base do backend com rota de verificação de funcionamento — ✅ 100%
 
-- [ ] Express mínimo, ESM (`"type": "module"`), sem Socket.io
-- [ ] `src/index.js`, `src/routes/`, `src/services/`
-- [ ] `GET /health` funcionando
-- [ ] `.env.example` novo, sem nenhuma variável `META_*`/`TWILIO_*`/`SUPABASE_*`
+- [x] Express mínimo, ESM (`"type": "module"`), sem Socket.io
+- [x] `src/index.js`, `src/routes/`, `src/services/`
+- [x] `GET /health` funcionando
+- [x] `.env.example` novo, sem nenhuma variável `META_*`/`TWILIO_*`/`SUPABASE_*`
+- [x] Validações locais registradas em 2026-09-18: `npm run check` e
+      `npm test` aprovados (1/1 teste)
+- [x] Documentação OpenAPI visível em `/docs`, com especificação em `/docs.json`
+
+**Evidência:** `npm run check`, `npm test` (27/27) e auditoria de dependências
+sem vulnerabilidades de severidade alta em 2026-09-19.
 
 - **Depende de:** SET-01
 
-### SET-06 — Banco de dados provisório e publicação na Vercel — ⬜ 0%
+### SET-06 — Banco de dados provisório e publicação na Vercel — 🔄 Em andamento
 
 *(cronograma: `AT2 / SET-04` — reaproveita o código `SET-04` para "banco
 provisório + Vercel", diferente do `SET-04` de coexistência em `AT1`.
@@ -173,29 +197,35 @@ Renumerado aqui para `SET-06` para evitar ambiguidade. Cobre o schema no
 Neon e o deploy do backend.)*
 
 - [ ] Projeto criado no Neon (via integração Vercel ou console próprio)
-- [ ] `DATABASE_URL` com `sslmode=require` documentada em `.env.example`
+- [x] `DATABASE_URL` com `sslmode=require` documentada em `.env.example`
 - [ ] Comportamento de auto-suspend do free tier confirmado (latência após inatividade)
-- [ ] Tabela `contacts` (`wa_id`, `profile_name`, `last_message_at`)
-- [ ] Tabela `messages` (`id`, `infobip_message_id` único, `wa_id`, `direction`, `sent_via`, `body`, `message_type`, `status`, `error_code`, `created_at`)
-- [ ] `infobip_message_id` único garante idempotência em reentrega de webhook
-- [ ] `sent_via` (`api`/`business_app`) distingue mensagem enviada pelo backend
+- [x] Tabela `contacts` (`wa_id`, `profile_name`, `last_message_at`) definida na
+      migration `db/migrations/001_initial_schema.sql`
+- [x] Tabela `messages` (`id`, `infobip_message_id` único, `wa_id`, `direction`, `sent_via`, `body`, `message_type`, `status`, `error_code`, `created_at`) definida na migration
+- [x] `infobip_message_id` único garante idempotência em reentrega de webhook
+- [x] `sent_via` (`api`/`business_app`) distingue mensagem enviada pelo backend
       de eco de coexistência do celular
-- [ ] Todas as datas em `timestamptz`/UTC
-- [ ] Migration versionada no repo (SQL puro)
+- [x] Todas as datas em `timestamptz`/UTC
+- [x] Migration versionada no repo (SQL puro)
 - [ ] Role `powerbi_reader` criado, somente leitura (`grant select` +
       `default privileges` para tabelas futuras)
-- [ ] Backend Express empacotado como função serverless na Vercel (sem Next.js)
+- [x] Backend Express exporta a aplicação como default para ser detectado como
+      Vercel Function (sem Next.js); ainda não foi implantado
 - [ ] Variáveis de ambiente configuradas em Production e Preview
 - [ ] Deploy automático a cada push na `main`
 
 - **Depende de:** SET-01, DOC-01 (formato do `wa_id`)
 - **Bloqueia:** API-02, BI-01
 
-### API-02 — Recepção e gravação de status/eventos da Infobip (Webhooks) — ⬜ 0%
+### API-02 — Recepção e gravação de status/eventos da Infobip (Webhooks) — 🔄 Em andamento
 
 - [ ] Validação conforme mecanismo definido em `DOC-01`
-- [ ] Parser do payload real da Infobip → `Message`/`Contact`
-- [ ] Upsert de contato + insert idempotente de mensagem (por `infobip_message_id`)
+- [x] Rota local `POST /webhooks/infobip/inbound` normaliza o envelope
+      documentado `results` de entrada WhatsApp em `Contact`/`Message`; o
+      payload real do tenant ainda precisa ser capturado antes de produção
+- [x] Upsert de contato + insert idempotente de mensagem (por `infobip_message_id`)
+      implementados localmente de forma atômica; aguardam banco Neon e parser
+      do payload real para uso em webhook
 - [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
       gravando com `direction: 'out'`, `sent_via: 'business_app'`
 - [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em
@@ -203,33 +233,44 @@ Neon e o deploy do backend.)*
 - [ ] Confirma se o inbound da **Messages API** (usada em `API-03` para envio)
       chega no mesmo formato do canal WhatsApp dedicado ou exige um segundo
       formato de parser
-- [ ] Responde rápido (200 imediato), processamento não bloqueia a resposta
-- [ ] Payload desconhecido não derruba a rota — loga e segue
+- [x] Evento não mapeado recebe `202` sem armazenar payload bruto; JSON inválido
+      retorna contrato seguro `400`
+- [x] Receptor fica indisponível (`503`) até receber banco e token de webhook;
+      token Bearer inválido retorna `401` antes de qualquer persistência
 - [ ] Bloco `@openapi` documentado
 
 - **Depende de:** SET-06, API-01, SET-04, SET-05
 
-### API-03 — Rotas para envio de mensagens de texto e templates — ⬜ 0%
+### API-03 — Rotas para envio de mensagens de texto e templates — 🔄 Em andamento
 
 Ambas as rotas chamam o mesmo cliente da **Messages API**
 (`POST /messages-api/1/messages`) — não o canal WhatsApp dedicado. Ver
 `PRD_PhysioVilas_WhatsApp.md` seção 4.4.
 
-- [ ] Envio de texto livre via Messages API (`channel: "WHATSAPP"`, `content.body`)
+- [x] Cliente local constrói e valida o payload de texto da Messages API
+      (`channel: "WHATSAPP"`, `content.body`) sem selecionar endpoint de envio
+- [x] Rota interna `POST /messages/validate` chama somente o endpoint de
+      validação da Infobip; fica em `503` sem credenciais e token internos e
+      retorna `401` antes da validação quando o token Bearer é inválido
+- [ ] Envio de texto livre via Messages API contra conta real, somente com
+      autorização específica para disparar uma mensagem
 - [ ] Envio de template via Messages API — formato de `content` confirmado em `SET-05`
-- [ ] Erros da Infobip propagados com `status`/`details`
+- [x] Erros da Infobip são encapsulados localmente com `status`/`details`
 - [ ] Mensagem enviada é gravada em `messages` com `direction: 'out'`, `sent_via: 'api'`
 - [ ] Bloco `@openapi` documentado
 
 - **Depende de:** SET-06, API-01, SET-05
 
-### API-04 — Funcionalidade de agendamento de envios futuros — ⬜ 0%
+### API-04 — Funcionalidade de agendamento de envios futuros — 🔄 Em andamento
 
 Mecanismo confirmado (Messages API + `sendAt`, seção 4.2 do plano) — mesmo
 endpoint de `API-03`, com o campo `sendAt` preenchido. Não é uma rota
 separada `/messages/schedule`.
 
-- [ ] Campo `sendAt` opcional aceito nas rotas de `API-03` (envio imediato se ausente)
+- [x] Cliente local aceita `sendAt` opcional e rejeita data inválida antes de
+      qualquer chamada externa
+- [x] Rota de validação repassa `sendAt` ao cliente local, coberta por teste
+      sem disparar mensagem
 - [ ] `sendAt` testado de ponta a ponta contra a conta real (mensagem chega no horário agendado)
 - [ ] `messageId` de retorno usado como `infobip_message_id` para idempotência
 - [ ] Confirmado limite de `sendAt` para WhatsApp especificamente (180 dias é
@@ -240,9 +281,11 @@ separada `/messages/schedule`.
 
 - **Depende de:** API-03
 
-### API-05 — Documentação interativa das APIs (Swagger) — ⬜ 0%
+### API-05 — Documentação interativa das APIs (Swagger) — 🔄 Em andamento
 
-- [ ] Swagger UI servido em `/docs`, spec em `/docs.json`
+- [x] Swagger UI servido em `/docs`, spec OpenAPI 3.1 em `/docs.json`
+- [x] Rotas locais atuais (`/health`, webhook de entrada e validação sem envio)
+      descritas com respostas de configuração e autorização
 - [ ] `info.description` explicando o formato do `wa_id` confirmado em `DOC-01`
 
 - **Depende de:** API-02, API-03
@@ -256,27 +299,38 @@ separada `/messages/schedule`.
 > na plataforma e a validação de que os fluxos funcionam, não implementação
 > de backend.
 
-### AUT-01 — Aprovar todos os templates na Infobip — ⬜ 0%
+### AUT-01 — Aprovar todos os templates na Infobip — 🔄 Em andamento
 
+- [x] Inventário do tenant revisado e pacote versionado em
+      `docs/INFOBIP_AUTOMATIONS.md`; não há modelo identificado para o projeto
+- [x] Elegibilidade para cadastro verificada: o sender de teste aparece
+      conectado no canal, mas o seletor de modelos não oferece nenhum remetente;
+      bloqueio registrado sem criar um novo sender
 - [ ] Todos os templates necessários (lembrete de consulta, confirmações, etc.) submetidos para aprovação
 - [ ] Todos aprovados pela Meta/Infobip
 
-### AUT-02 — Concluir fluxo de triagem (menu de atendimento) — ⬜ 0%
+### AUT-02 — Concluir fluxo de triagem (menu de atendimento) — 🔄 Em andamento
 
+- [x] Fluxo, limites de atendimento humano e critérios de aceite versionados
+      em `docs/INFOBIP_AUTOMATIONS.md`
 - [ ] Menu de triagem configurado na plataforma Infobip
 - [ ] Testado ponta a ponta com número real
 
 - **Depende de:** AUT-01
 
-### AUT-03 — Concluir fluxo de FAQ (Perguntas Frequentes) — ⬜ 0%
+### AUT-03 — Concluir fluxo de FAQ (Perguntas Frequentes) — 🔄 Em andamento
 
+- [x] Escopo seguro do FAQ e regras de encaminhamento humano versionados em
+      `docs/INFOBIP_AUTOMATIONS.md`
 - [ ] Fluxo de FAQ configurado na plataforma Infobip
 - [ ] Testado ponta a ponta com número real
 
 - **Depende de:** AUT-01
 
-### AUT-04 — Concluir sistema de lembrete de consultas — ⬜ 0%
+### AUT-04 — Concluir sistema de lembrete de consultas — 🔄 Em andamento
 
+- [x] Template proposto, pré-requisitos técnicos e roteiro de aceite
+      versionados em `docs/INFOBIP_AUTOMATIONS.md`
 - [ ] Lembrete de consulta usando template aprovado (`AUT-01`) + agendamento (`API-04`)
 - [ ] Testado ponta a ponta (envio agendado chega no horário certo)
 
@@ -302,19 +356,24 @@ coexistência em produção", diferente do `SET-05` de "teste de templates" em
 > Aguardando detalhamento da gestão de projeto sobre os critérios finais de
 > entrega. Preencher conforme definido.
 
-### DOC-02 — Atualizar `CLAUDE.md`
+### DOC-02 — Atualizar `CLAUDE.md` — ✅ 100%
 
-- [ ] Reescrever para refletir a arquitetura Infobip + Neon + Vercel serverless
-- [ ] Remover toda referência a Meta Cloud API, Socket.io, Twilio, Supabase, Next.js
+- [x] Reescrever para refletir a arquitetura Infobip + Neon + Vercel serverless
+- [x] Remover toda referência a Meta Cloud API, Socket.io, Twilio, Supabase, Next.js
 
 - **Depende de:** API-01 a API-05 (arquitetura estabilizada)
 
-### DOC-03 — Atualizar `README.md`
+**Evidência:** documentação atualizada em 2026-09-18. Alterações futuras na
+arquitetura passam a ser manutenção normal da documentação.
 
-- [ ] Comandos, variáveis de ambiente e arquitetura atuais
-- [ ] Removida qualquer instrução do backend antigo
+### DOC-03 — Atualizar `README.md` — ✅ 100%
+
+- [x] Comandos, variáveis de ambiente e arquitetura atuais
+- [x] Removida qualquer instrução do backend antigo
 
 - **Depende de:** DOC-02
+
+**Evidência:** documentação atualizada em 2026-09-18 para a arquitetura atual.
 
 ---
 

@@ -4,9 +4,36 @@
 
 **Autor:** Davi Serra Passos
 **Cliente:** Clínica PhysioVilas
-**Última revisão:** Setembro de 2026
+**Última revisão:** 2026-09-19
 **Status:** Reestruturação em andamento — este documento é a fonte única de
 verdade (produto + técnica) para a arquitetura Infobip + Neon
+
+---
+
+## Atualização de implementação — 2026-09-18
+
+`API-01` está concluído localmente: há scaffold Node.js/Express em ESM,
+`GET /health`, documentação interativa em `/docs` e especificação OpenAPI em
+`/docs.json`. O registro de validação local em 2026-09-19 informa `npm run
+check` e `npm test` aprovados, com 27/27 testes passando.
+
+Em 2026-09-18, um template sandbox pela API WhatsApp dedicada da Infobip foi
+aceito com HTTP 200 e confirmado como recebido no número verificado do trial.
+Esse é um teste de plataforma isolado: não testa o backend deste repositório
+nem valida a Messages API escolhida para produção. Não houve deploy, banco de
+dados ou webhook nesta etapa. A avaliação observada na Infobip tinha 58 dias
+restantes, saldo de US$0, sender de teste ativo/conectado e nenhum profile ou
+subscription no módulo observado. Nenhum identificador de conta, sender, URL
+base ou segredo é registrado neste documento.
+
+`docs/INFOBIP_RULES.md` registra a evidência do sandbox e as lacunas restantes
+para payloads, segurança de webhook e contratos da Messages API. Os estados
+históricos de `SET-01` a `SET-04` permanecem preservados no backlog.
+
+A validação sem entrega da Messages API foi testada com a chave atual em
+2026-09-18 e respondeu HTTP 403. Isso bloqueia o teste do contrato unificado
+até existir uma chave com o escopo `messages-api:message:send`; não houve envio
+ou consumo de franquia nessa tentativa.
 
 ---
 
@@ -126,10 +153,10 @@ Power BI ──── conexão Postgres direta ────► Neon
 
 | Rota | Responsabilidade |
 |---|---|
-| `POST /webhook/infobip` | Recebe eventos da Infobip (mensagem recebida, atualização de status, eco de coexistência, sincronização de histórico) e grava no Neon |
-| `POST /messages` | Envia mensagem de texto livre via Infobip (Messages API), com `sendAt` opcional para agendamento |
-| `POST /messages/template` | Envia template aprovado via Infobip (Messages API), com `sendAt` opcional |
+| `POST /webhooks/infobip/inbound` | Recebe o envelope de entrada documentado da Infobip e, quando banco e token estão configurados, persiste mensagem conhecida no Neon |
+| `POST /messages/validate` | Valida texto livre e `sendAt` na Messages API, sem enviar mensagem; exige token interno e configuração completa |
 | `GET /health` | Health check |
+| `GET /docs` e `GET /docs.json` | Documentação Swagger UI e especificação OpenAPI das rotas existentes |
 
 Uma única rota de envio cobre texto, template e agendamento — o campo
 `sendAt` (presente ou ausente no corpo da requisição) decide se o envio é
@@ -177,7 +204,7 @@ POST /messages-api/1/messages
   "messages": [
     {
       "channel": "WHATSAPP",
-      "sender": "447860099299",
+      "sender": "<sender configurado>",
       "destinations": [
         { "to": "5511999999999" }
       ],
@@ -266,9 +293,13 @@ On-premises Data Gateway para refresh agendado — documentar a decisão
 
 ```
 # Infobip
-INFOBIP_BASE_URL=          # subdomínio da conta, ex: https://xxxxx.api.infobip.com
+INFOBIP_BASE_URL=          # URL base configurada fora do repositório
 INFOBIP_API_KEY=
 INFOBIP_WHATSAPP_SENDER=   # número remetente configurado no canal
+
+# Token estático para proteger chamadas ao backend e webhooks
+CHATMANAGER_API_TOKEN=
+INFOBIP_WEBHOOK_TOKEN=
 
 # Neon
 DATABASE_URL=              # connection string com sslmode=require

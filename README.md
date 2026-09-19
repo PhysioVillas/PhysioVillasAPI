@@ -20,10 +20,29 @@ BI**, conectado direto no Neon.
 
 ## Status atual
 
-**Reestruturação em andamento — sem código ainda.** O projeto anterior
-(Meta Cloud API + Express + Socket.io, e uma linha não implementada de
-Twilio + Next.js + Supabase) foi descartado por completo. A implementação
-recomeça do zero conforme `docs/PRD_PhysioVilas_WhatsApp.md`.
+**API-01 em andamento — corte técnico local concluído.** Há um scaffold
+Node.js/Express em ESM, com `GET /health` e export default compatível com
+Vercel. A integração segura contém apenas a validação sem envio da Messages
+API; o schema PostgreSQL está versionado, mas ainda não foi aplicado no Neon.
+O receptor local de webhook normaliza eventos de entrada conhecidos e permanece
+desligado até banco e token de webhook serem configurados.
+O endpoint interno de validação de mensagens permanece desligado até receber as
+credenciais da Infobip e um token próprio; ele não possui operação de envio.
+
+Em 2026-09-18, um template sandbox da API WhatsApp dedicada da Infobip foi
+aceito (HTTP 200) e recebido no número verificado do trial. Isso valida apenas
+o remetente sandbox e a entrega inicial: não houve deploy, banco de dados,
+webhook ou envio pelo código deste repositório. Também não valida o contrato da
+Messages API adotada para produção.
+O ticket permanece em andamento porque a Definição de Pronto exige OpenAPI em
+`/docs`; essa superfície pertence ao `API-05`, que depende de `API-02` e
+`API-03`. O detalhamento e as evidências disponíveis estão em
+[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
+
+O app Express pode ser detectado como uma única Vercel Function sem
+configuração adicional; o deploy continua pendente até haver projeto e variáveis
+de ambiente provisionados. Veja a
+[documentação da Vercel para Express](https://vercel.com/docs/frameworks/backend/express).
 
 ## Arquitetura (planejada)
 
@@ -53,4 +72,9 @@ Detalhes completos: [`docs/PRD_PhysioVilas_WhatsApp.md`](docs/PRD_PhysioVilas_Wh
 
 - [`docs/PRD_PhysioVilas_WhatsApp.md`](docs/PRD_PhysioVilas_WhatsApp.md) — escopo do produto e arquitetura técnica (rotas, schema, coexistência, agendamento, riscos).
 - [`docs/BACKLOG.md`](docs/BACKLOG.md) — tickets de desenvolvimento.
-- `docs/INFOBIP_RULES.md` — referência da API da Infobip (a escrever, ver `SET-01` no backlog).
+- [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) — registro factual do estado da implementação e das lacunas de evidência.
+- [`docs/INFOBIP_RULES.md`](docs/INFOBIP_RULES.md) — evidências de integração
+  Infobip e lacunas ainda abertas.
+- [`docs/INFOBIP_AUTOMATIONS.md`](docs/INFOBIP_AUTOMATIONS.md) — pacote
+  versionado de templates, menu, FAQ e lembretes, conciliado com os protótipos
+  anteriores sem ativar nenhuma automação.

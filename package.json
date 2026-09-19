@@ -1,0 +1,20 @@
+{
+  "name": "chat-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/app.js && node --check src/index.js && node --check src/openapi.js && node --check src/config/runtimeConfig.js && node --check src/middleware/bearerToken.js && node --check src/middleware/errorHandlers.js && node --check src/routes/health.js && node --check src/routes/infobipWebhooks.js && node --check src/routes/messages.js && node --check src/services/healthService.js && node --check src/services/infobipMessagesClient.js && node --check src/services/infobipWebhookNormalizer.js && node --check src/services/database.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
