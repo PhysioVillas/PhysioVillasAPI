@@ -6,7 +6,7 @@
 
 O corte técnico local está concluído: há scaffold Node.js com Express em ESM e
 `GET /health`. O registro de validação local informa sucesso para `npm run
-check` e `npm test`, com 28/28 testes passando em 2026-09-19.
+check` e `npm test`, com 32/32 testes passando em 2026-09-19.
 
 A documentação interativa está disponível em `/docs`, com a especificação
 OpenAPI 3.1 em `/docs.json`. Ela cobre as rotas existentes, incluindo as
@@ -59,6 +59,11 @@ O módulo `src/services/database.js` já oferece upsert parametrizado de contato
 e inserção idempotente de mensagens, com um pool injetável para testes. Ele não
 abre conexão enquanto não for criado com uma `DATABASE_URL` válida, e nenhuma
 rota Express o chama antes de o banco ser provisionado.
+
+O comando manual `npm run migrate` aplica as migrations SQL em ordem, registra
+o checksum em `schema_migrations` e falha se uma migration já aplicada for
+alterada. Ele não integra a partida da API ou o deploy; exige `DATABASE_URL`
+somente no momento da execução.
 
 `src/config/runtimeConfig.js` centraliza a leitura das variáveis de ambiente e
 valida a porta local. Configurações de banco e Infobip continuam opcionais na
