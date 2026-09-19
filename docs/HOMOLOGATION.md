@@ -26,10 +26,10 @@ permanece em `503`. Esse é o estado desejado para a primeira publicação.
 
 ## Sequência de provisionamento
 
-1. Aplicar, no console SQL do Neon e nesta ordem,
-   `db/migrations/001_initial_schema.sql` e
-   `db/migrations/002_reporting_views.sql`. O console exige a verificação do
-   e-mail da conta Neon antes de liberar o editor SQL.
+1. Com a URL mantida apenas no ambiente, executar `npm run migrate`. O comando
+   aplica em ordem as migrations versionadas, registra checksums e não é
+   disparado no deploy. O console SQL do Neon continua como alternativa e
+   exige a verificação do e-mail da conta Neon antes de liberar o editor.
 2. Configurar somente `DATABASE_URL` como segredo de **Preview** no projeto
    Vercel. A URL não deve ser salva em arquivo versionado ou em documentação.
 3. Criar uma publicação de preview da revisão atual, sem domínio e sem

@@ -6,10 +6,14 @@ mensagens saídas pelo backend das enviadas pelo WhatsApp Business App.
 
 ## Aplicar a migração
 
-Com uma `DATABASE_URL` de ambiente que use SSL, execute em ordem as migrações
-`migrations/001_initial_schema.sql` e `migrations/002_reporting_views.sql` no
-console SQL do Neon ou com `psql` usando um usuário proprietário do banco. As
-migrações podem ser executadas novamente sem recriar tabelas, índices ou views.
+Com uma `DATABASE_URL` de ambiente que use SSL, execute `npm run migrate` com
+um usuário proprietário do banco. O executor aplica em ordem os arquivos SQL
+de `migrations/`, registra o checksum de cada um em `schema_migrations` e
+recusa uma migration já aplicada que tenha sido alterada. Ele não é executado
+na inicialização da API ou no deploy.
+
+Alternativamente, execute no console SQL do Neon, nesta ordem,
+`migrations/001_initial_schema.sql` e `migrations/002_reporting_views.sql`.
 
 Não registre a URL de conexão, usuários, senhas, números de telefone ou chaves
 de API neste repositório.
