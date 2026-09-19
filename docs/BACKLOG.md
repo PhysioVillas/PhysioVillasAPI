@@ -197,7 +197,9 @@ provisório + Vercel", diferente do `SET-04` de coexistência em `AT1`.
 Renumerado aqui para `SET-06` para evitar ambiguidade. Cobre o schema no
 Neon e o deploy do backend.)*
 
-- [ ] Projeto criado no Neon (via integração Vercel ou console próprio)
+- [x] Banco Neon `chatmanager-homolog` criado pela integração Vercel, plano
+      Free, região São Paulo e sem Neon Auth; migrations e projeto Vercel ainda
+      pendentes
 - [x] `DATABASE_URL` com `sslmode=require` documentada em `.env.example`
 - [ ] Comportamento de auto-suspend do free tier confirmado (latência após inatividade)
 - [x] Tabela `contacts` (`wa_id`, `profile_name`, `last_message_at`) definida na

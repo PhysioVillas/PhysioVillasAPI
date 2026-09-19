@@ -1,8 +1,9 @@
 # Homologação temporária — Vercel + Neon
 
-**Estado em 2026-09-19:** a conta Vercel de homologação foi verificada no plano
-Hobby. A instalação da integração Neon está pronta para a confirmação final no
-Marketplace, mas ainda não foi aceita nem criou banco, projeto ou cobrança.
+**Estado em 2026-09-19:** foi criado o banco `chatmanager-homolog` no plano
+Free da Neon, pela integração da conta Vercel Hobby, na região São Paulo
+(`gru1`) e sem o módulo Neon Auth. Não há projeto Vercel conectado, domínio,
+credencial Infobip ou envio de WhatsApp configurado.
 
 ## Limite do ambiente de teste
 
@@ -25,19 +26,16 @@ permanece em `503`. Esse é o estado desejado para a primeira publicação.
 
 ## Sequência de provisionamento
 
-1. Aceitar a integração Neon no Marketplace da Vercel e criar um banco de
-   homologação no plano gratuito. A tela informa que Vercel compartilhará com
-   a Neon o ID da Vercel, e-mail e dados de uso; nenhuma credencial deve ser
-   copiada para o repositório.
-2. Aplicar, no console SQL do Neon e nesta ordem,
+1. Aplicar, no console SQL do Neon e nesta ordem,
    `db/migrations/001_initial_schema.sql` e
-   `db/migrations/002_reporting_views.sql`.
-3. Configurar somente `DATABASE_URL` como segredo de **Preview** no projeto
+   `db/migrations/002_reporting_views.sql`. O console exige a verificação do
+   e-mail da conta Neon antes de liberar o editor SQL.
+2. Configurar somente `DATABASE_URL` como segredo de **Preview** no projeto
    Vercel. A URL não deve ser salva em arquivo versionado ou em documentação.
-4. Criar uma publicação de preview do diretório local, sem domínio e sem
+3. Criar uma publicação de preview da revisão atual, sem domínio e sem
    promoção para produção. O projeto Express já exporta `src/app.js` como
    aplicação padrão compatível com uma Vercel Function.
-5. Validar `GET /health`, `/docs` e `/docs.json`. Validar ainda que as duas
+4. Validar `GET /health`, `/docs` e `/docs.json`. Validar ainda que as duas
    superfícies com efeito externo continuam desativadas (`503`) antes de
    integrar Infobip.
 
