@@ -20,7 +20,7 @@ BI**, conectado direto no Neon.
 
 ## Status atual
 
-**API-01 em andamento — corte técnico local concluído.** Há um scaffold
+**API-01 concluída localmente.** Há um scaffold
 Node.js/Express em ESM, com `GET /health` e export default compatível com
 Vercel. A integração segura contém apenas a validação sem envio da Messages
 API; o schema PostgreSQL está versionado, mas ainda não foi aplicado no Neon.
@@ -40,8 +40,9 @@ O ticket permanece em andamento porque a Definição de Pronto exige OpenAPI em
 [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
 
 O app Express pode ser detectado como uma única Vercel Function sem
-configuração adicional; o deploy continua pendente até haver projeto e variáveis
-de ambiente provisionados. Veja a
+configuração adicional. A primeira publicação será um preview isolado: recebe
+apenas `DATABASE_URL` do Neon e mantém as integrações Infobip desligadas. Veja
+a sequência e os limites em [`docs/HOMOLOGATION.md`](docs/HOMOLOGATION.md) e a
 [documentação da Vercel para Express](https://vercel.com/docs/frameworks/backend/express).
 
 ## Arquitetura (planejada)

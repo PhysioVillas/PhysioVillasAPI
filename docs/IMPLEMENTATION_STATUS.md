@@ -6,7 +6,7 @@
 
 O corte técnico local está concluído: há scaffold Node.js com Express em ESM e
 `GET /health`. O registro de validação local informa sucesso para `npm run
-check` e `npm test`, com 1/1 teste passando.
+check` e `npm test`, com 28/28 testes passando em 2026-09-19.
 
 A documentação interativa está disponível em `/docs`, com a especificação
 OpenAPI 3.1 em `/docs.json`. Ela cobre as rotas existentes, incluindo as
@@ -39,6 +39,12 @@ de envio. Seus testes verificam endpoint, payload e propagação de erros sem
 fazer chamadas de rede.
 
 ## SET-06 — em andamento
+
+A Vercel foi conferida em uma conta Hobby de homologação e a integração Neon
+foi selecionada no Marketplace. A confirmação final ainda não foi aceita: ela
+cria um banco externo e informa o compartilhamento, da Vercel para Neon, do ID
+da conta, e-mail e dados de uso. O plano de configuração sem envio de WhatsApp
+e o roteiro de validação estão em `docs/HOMOLOGATION.md`.
 
 A base versionada do banco está em `db/migrations/001_initial_schema.sql`.
 Ela cria `contacts` e `messages`, preserva o identificador único da Infobip para

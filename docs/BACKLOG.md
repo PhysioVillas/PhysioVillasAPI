@@ -88,23 +88,24 @@ AT4 — Entrega do Pacote 2
 
 - [x] Endpoint e payload de envio de texto livre confirmados contra a conta real
 
-### SET-04 — Confirmar rota e fluxo de coexistência com WhatsApp Web (`smb_message_echoes`) — ✅ 100%
+### SET-04 — Confirmar rota e fluxo de coexistência com WhatsApp Web (`smb_message_echoes`) — 🔄 Em andamento
 
 *(cronograma: `AT1 / SET-04`)*
 
 Feature essencial: a clínica só migra se puder manter o app do celular
-funcionando no mesmo número. Já confirmado via documentação pública
-(`PRD_PhysioVilas_WhatsApp.md` seção 4.3) que a Infobip suporta isso via
-Embedded Signup.
+funcionando no mesmo número. A documentação pública (`PRD_PhysioVilas_WhatsApp.md`
+seção 4.3) indica suporte por Embedded Signup, mas não substitui uma validação
+na conta da clínica.
 
-- [x] Onboarding de coexistência testado na conta real (Embedded Signup com
+- [ ] Onboarding de coexistência testado na conta real (Embedded Signup com
       `featureType: whatsapp_business_app_onboarding`, ou fluxo pelo console)
-- [x] Payload real do webhook `smb_message_echoes` capturado (mensagem
+- [ ] Payload real do webhook `smb_message_echoes` capturado (mensagem
       enviada pelo celular gera esse evento)
-- [x] Campo discriminador identificado — como diferenciar, no mesmo endpoint
-      de webhook, entre mensagem recebida normal / status / eco de
-      coexistência / chunk de histórico
-- [x] Achados incorporados em `docs/INFOBIP_RULES.md` (consolidar em `DOC-01`)
+- [ ] Campo discriminador identificado — como diferenciar, no mesmo endpoint
+      entre mensagem recebida normal / status / eco de coexistência / chunk de
+      histórico
+- [x] Decisão de coexistência e lacunas registradas em `docs/INFOBIP_RULES.md`
+      para consolidação em `DOC-01`
 
 ### SET-05 — Teste inicial do uso de templates — 🔄 Em andamento
 
