@@ -269,15 +269,24 @@ create table messages (
 - `sent_via` existe por causa da coexistência (seção 4.3): distingue
   atendimento manual (`business_app`) de automação (`api`) nos relatórios.
 
+### 5.1 Módulo de relatórios
+
+O Power BI não recebe acesso às tabelas operacionais. A migração
+`db/migrations/002_reporting_views.sql` cria
+`reporting.daily_message_metrics`, uma visão diária agregada por direção,
+origem, tipo e status. Ela não inclui corpo de mensagem, nome de perfil ou
+identificador de WhatsApp. O mapa completo de limites e futuras extensões está
+em `db/DATA_MODEL.md`.
+
 **Papel somente-leitura para o Power BI** — não apontar o Power BI para o
 mesmo usuário que o backend usa para escrever:
 
 ```sql
 create role powerbi_reader with login password '...';
 grant connect on database <db> to powerbi_reader;
-grant usage on schema public to powerbi_reader;
-grant select on all tables in schema public to powerbi_reader;
-alter default privileges in schema public grant select on tables to powerbi_reader;
+grant usage on schema reporting to powerbi_reader;
+grant select on all tables in schema reporting to powerbi_reader;
+alter default privileges in schema reporting grant select on tables to powerbi_reader;
 ```
 
 **Conexão Power BI ↔ Neon:** conector nativo "PostgreSQL database"

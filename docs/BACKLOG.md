@@ -207,6 +207,10 @@ Neon e o deploy do backend.)*
       de eco de coexistência do celular
 - [x] Todas as datas em `timestamptz`/UTC
 - [x] Migration versionada no repo (SQL puro)
+- [x] Camada `reporting` versionada em `db/migrations/002_reporting_views.sql`,
+      com métricas agregadas sem corpo de mensagem, nome de perfil ou `wa_id`
+- [x] Contrato de leitura do Power BI corrigido para acesso somente ao schema
+      `reporting`; mapa de módulos e retenção pendente em `db/DATA_MODEL.md`
 - [ ] Role `powerbi_reader` criado, somente leitura (`grant select` +
       `default privileges` para tabelas futuras)
 - [x] Backend Express exporta a aplicação como default para ser detectado como
