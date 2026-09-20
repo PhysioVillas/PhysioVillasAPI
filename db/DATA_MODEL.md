@@ -32,6 +32,12 @@ O webhook não guarda o payload bruto da Infobip. Isso reduz retenção acidenta
 de campos desconhecidos e deixa o parser responsável por aceitar somente dados
 explicitamente mapeados.
 
+Relatórios de entrega usam `doneAt` como instante de ordenação. Um evento com
+data anterior à última atualização persistida não regride o status da mensagem;
+se o provedor não informar data, ele só pode preencher uma mensagem que ainda
+não tenha recebido status. Isso protege a trilha operacional contra reentregas
+fora de ordem sem reter o payload bruto.
+
 Quando um envio vier a ser autorizado e a Messages API aceitar a solicitação,
 o backend usa o recibo (`messageId`) para gravar atomicamente o contato, a
 conversa aberta e a mensagem de saída com `direction: 'out'` e

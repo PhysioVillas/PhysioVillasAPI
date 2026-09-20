@@ -76,12 +76,34 @@ test('recordDeliveryStatus updates only the known outbound message', async () =>
   assert.match(pool.calls[0].text, /update messages/i);
   assert.match(pool.calls[0].text, /where infobip_message_id = \$1/i);
   assert.match(pool.calls[0].text, /status_updated_at = coalesce\(\$4, now\(\)\)/i);
+  assert.match(pool.calls[0].text, /status_updated_at is null/i);
+  assert.match(pool.calls[0].text, /\(\$4 is not null and status_updated_at <= \$4\)/i);
   assert.deepEqual(pool.calls[0].values, [
     'outbound-event-id',
     'delivered_to_handset',
     null,
     '2026-09-20T14:00:00.000+0000',
   ]);
+});
+
+test('recordDeliveryStatus ignores a report older than the stored delivery update', async () => {
+  const pool = {
+    calls: [],
+    query: async (query) => {
+      pool.calls.push(query);
+      return { rows: [] };
+    },
+  };
+  const database = createDatabase({ pool });
+
+  const result = await database.recordDeliveryStatus({
+    infobipMessageId: 'outbound-event-id',
+    status: 'sent',
+    statusUpdatedAt: '2026-09-20T13:00:00.000Z',
+  });
+
+  assert.equal(result, null);
+  assert.match(pool.calls[0].text, /status_updated_at <= \$4/i);
 });
 
 test('database methods reject invalid domain values before querying PostgreSQL', async () => {

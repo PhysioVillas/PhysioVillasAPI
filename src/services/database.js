@@ -156,6 +156,10 @@ function createDatabase({ connectionString, pool } = {}) {
           error_code = $3,
           status_updated_at = coalesce($4, now())
         where infobip_message_id = $1
+          and (
+            status_updated_at is null or
+            ($4 is not null and status_updated_at <= $4)
+          )
         returning id, infobip_message_id, status, error_code, status_updated_at
       `,
       values: [infobipMessageId, status, errorCode, statusUpdatedAt],

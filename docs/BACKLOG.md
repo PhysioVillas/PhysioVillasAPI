@@ -258,6 +258,8 @@ Neon e o deploy do backend.)*
 - [x] Relatório de entrega documentado (`results[].messageId`, `status.name`,
       `doneAt` e erro) é normalizado localmente e atualiza somente status, erro
       e instante de entrega; preço e payload bruto não são persistidos
+- [x] Atualização de entrega não regride status já mais recente: eventos fora
+      de ordem são ignorados pelo instante `doneAt`, sem guardar payload bruto
 - [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
       gravando com `direction: 'out'`, `sent_via: 'business_app'`
 - [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em
