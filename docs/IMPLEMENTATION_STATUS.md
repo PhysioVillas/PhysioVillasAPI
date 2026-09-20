@@ -14,6 +14,12 @@ respostas de rota desligada e de autorização. Assim, o corte de `API-01` atend
 à Definition of Done local; a documentação continuará evoluindo em `API-05`
 conforme novas rotas reais forem implementadas.
 
+Em 2026-09-20, o contrato OpenAPI passou a descrever explicitamente os dois
+eventos de webhook locais (mensagem recebida e relatório de entrega), inclusive
+o fato de que o payload bruto não é armazenado. Texto, template e `sendAt`
+também são verificados por teste de documentação; as rotas continuam sendo de
+validação, sem envio de mensagem.
+
 Em 2026-09-20, a descrição da especificação passou a documentar o contrato
 atual de `wa_id`: o backend preserva o valor do campo `from` da Infobip sem
 normalização. O formato comercial definitivo ainda requer um payload real, mas

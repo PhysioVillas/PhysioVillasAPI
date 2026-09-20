@@ -116,3 +116,17 @@ test('OpenAPI documents how wa_id is preserved pending a real Infobip payload', 
   assert.match(openApiDocument.info.description, /campo `from`/);
   assert.match(openApiDocument.info.description, /n[aã]o adiciona `\+`/);
 });
+
+test('OpenAPI documents the safe webhook and validation contracts', () => {
+  const webhook = openApiDocument.paths['/webhooks/infobip/inbound'].post;
+  const webhookResult = webhook.requestBody.content['application/json'].schema.properties.results;
+  const textValidation = openApiDocument.paths['/messages/validate'].post;
+  const templateValidation = openApiDocument.paths['/messages/templates/validate'].post;
+
+  assert.equal(webhookResult.items.oneOf.length, 2);
+  assert.match(webhookResult.description, /payload bruto não é armazenado/i);
+  assert.ok(webhook.responses[400]);
+  assert.equal(textValidation.requestBody.content['application/json'].schema.properties.sendAt.format, 'date-time');
+  assert.equal(templateValidation.requestBody.content['application/json'].schema.properties.sendAt.format, 'date-time');
+  assert.ok(templateValidation.requestBody.content['application/json'].schema.properties.parameters);
+});

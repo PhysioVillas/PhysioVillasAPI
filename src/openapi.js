@@ -27,9 +27,71 @@ const openApiDocument = {
       post: {
         summary: 'Recebe evento WhatsApp de entrada ou relatório de entrega da Infobip',
         security: [{ InfobipWebhookBearer: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['results'],
+                properties: {
+                  results: {
+                    type: 'array',
+                    description: 'Somente os campos mapeados são processados; o payload bruto não é armazenado.',
+                    items: {
+                      oneOf: [
+                        {
+                          type: 'object',
+                          required: ['from', 'receivedAt', 'messageId', 'message'],
+                          properties: {
+                            from: { type: 'string' },
+                            receivedAt: { type: 'string', format: 'date-time' },
+                            messageId: { type: 'string' },
+                            message: {
+                              type: 'object',
+                              required: ['type'],
+                              properties: {
+                                type: { type: 'string', example: 'TEXT' },
+                                text: { type: 'string' },
+                              },
+                            },
+                            contact: {
+                              type: 'object',
+                              properties: { name: { type: 'string' } },
+                            },
+                          },
+                        },
+                        {
+                          type: 'object',
+                          required: ['messageId', 'status'],
+                          properties: {
+                            messageId: { type: 'string' },
+                            doneAt: { type: 'string', format: 'date-time' },
+                            status: {
+                              type: 'object',
+                              properties: {
+                                name: { type: 'string', example: 'DELIVERED_TO_HANDSET' },
+                                groupName: { type: 'string', example: 'DELIVERED' },
+                              },
+                            },
+                            error: {
+                              type: 'object',
+                              properties: { name: { type: 'string' } },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         responses: {
           200: { description: 'Evento mapeado persistido; relatórios atualizam apenas status, erro e instante de entrega' },
           202: { description: 'Evento não mapeado reconhecido sem persistência' },
+          400: { description: 'JSON inválido' },
           401: { description: 'Token de webhook inválido' },
           503: { description: 'Webhook ainda não configurado' },
         },
