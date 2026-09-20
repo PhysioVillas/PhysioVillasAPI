@@ -292,6 +292,8 @@ Ambas as rotas chamam o mesmo cliente da **Messages API**
 - [x] Recibo de envio autorizado tem persistência local atômica preparada:
       `messageId`, contato e conversa aberta são gravados juntos como saída
       `api`, sem habilitar rota de envio
+- [x] Código de persistência de recibo publicado em Preview isolado e validado:
+      `/health` em `200`; `/health/ready` em `503` sem banco e sem Infobip
 - [ ] Mensagem enviada é gravada em `messages` com `direction: 'out'`, `sent_via: 'api'`
 - [x] OpenAPI documenta as duas rotas de validação, inclusive nome, idioma e
       parâmetros de template

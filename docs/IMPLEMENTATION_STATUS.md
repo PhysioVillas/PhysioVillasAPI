@@ -215,3 +215,8 @@ como `>=20 <25`. O build de homologação concluiu sem a advertência anterior d
 runtime futuro automático; `/health` permaneceu em `200` e `/health/ready` em
 `503/not_configured`. Isso preserva o corte seguro: a Vercel prova a função,
 mas ainda não tem acesso ao banco nem capacidade de chamar a Infobip.
+
+A versão seguinte incluiu a persistência atômica do recibo de envio autorizado
+e também foi publicada apenas como Preview. A verificação externa repetiu
+`/health` em `200` e `/health/ready` em `503/not_configured`; não houve
+configuração de banco, token interno, webhook ou credencial Infobip.

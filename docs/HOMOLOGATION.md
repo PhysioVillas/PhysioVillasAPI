@@ -55,6 +55,12 @@ advertência de versão automática do Node, `GET /health` em `200` e
 há `DATABASE_URL`, token interno, credenciais Infobip, domínio ou promoção para
 produção.
 
+Após a preparação da persistência atômica do recibo de envio autorizado, uma
+quarta publicação de **Preview** foi concluída e consultada em 2026-09-20.
+`GET /health` respondeu `200` e `GET /health/ready` respondeu
+`503/not_configured`, confirmando que o novo código foi publicado sem habilitar
+banco, webhook ou chamadas à Infobip. A publicação permaneceu em Preview.
+
 ## Sequência de provisionamento
 
 1. As migrations `001_initial_schema.sql` a `005_active_conversations.sql`
