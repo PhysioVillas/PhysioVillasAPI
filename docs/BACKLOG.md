@@ -225,6 +225,9 @@ Neon e o deploy do backend.)*
 - [x] Backend Express exporta a aplicação como default para ser detectado como
       Vercel Function (sem Next.js); preview externo responde `/health` e
       `/docs.json`, enquanto banco e mensageria retornam `503` sem configuração
+- [x] Preview atualizado após migrations de conversa e contrato OpenAPI;
+      `/health` continua em `200` e `/health/ready` em `503` sem banco, sem
+      Infobip e sem promoção para produção
 - [x] `GET /health/ready` diferencia banco não configurado, indisponível e
       schema pronto sem expor URL ou detalhes de erro
 - [ ] `DATABASE_URL` configurada somente como segredo de Preview; credenciais

@@ -198,3 +198,8 @@ lado, `/health/ready` e `/messages/validate` responderam `503`, o que comprova
 que persistência e mensageria continuam desativadas nesse ambiente. A primeira
 publicação de um projeto novo aparece como `production` na Vercel, mas não é a
 produção do produto e não tem qualquer integração externa habilitada.
+
+Uma nova publicação de **Preview** foi validada depois das entregas de
+conversa e OpenAPI: `/health` respondeu `200`, `/health/ready` permaneceu em
+`503` por banco não configurado e `/docs.json` expôs a especificação 3.1.
+Nenhuma variável de banco ou Infobip foi adicionada à Vercel.

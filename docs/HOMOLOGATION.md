@@ -41,6 +41,13 @@ especificação OpenAPI e `GET /health/ready` retornou `503` com
 `database: not_configured`. Um `POST /messages/validate` retornou `503` por
 falta de configuração, portanto não houve chamada à Infobip nem envio.
 
+Após as migrations de conversa e a revisão do contrato OpenAPI, uma nova
+publicação de **Preview** foi criada e validada em 2026-09-20. `GET /health`
+continuou retornando `200`; `GET /health/ready` retornou somente
+`not_ready/database: not_configured`; e `/docs.json` expôs o contrato completo
+sem credenciais. A publicação não foi promovida, não recebeu domínio, banco ou
+variáveis `INFOBIP_*`.
+
 ## Sequência de provisionamento
 
 1. As migrations `001_initial_schema.sql` a `005_active_conversations.sql`
