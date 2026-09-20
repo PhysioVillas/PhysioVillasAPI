@@ -160,7 +160,10 @@ Ela mantém o vínculo opcional das mensagens à conversa, índices para consult
 regras de integridade para estado, intenção e publicação. Dados clínicos,
 agenda, payloads brutos e parâmetros preenchidos por pacientes continuam fora
 do modelo. A migração está versionada e pronta para aplicação controlada no
-Neon, mas ainda não foi aplicada no ambiente externo nesta etapa.
+Neon e foi verificada por consulta de leitura juntamente com a migração `004`,
+que acrescenta `messages.status_updated_at`. O ambiente contém as tabelas de
+conversa, catálogo de templates e FAQ, mas não recebeu dados de pacientes,
+mensagens, agenda ou dados clínicos.
 
 Também foi definida uma política executável de acesso por perfil. O perfil
 operacional é o único com leitura de contatos e mensagens identificáveis;

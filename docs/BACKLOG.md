@@ -209,6 +209,8 @@ Neon e o deploy do backend.)*
       de eco de coexistência do celular
 - [x] Todas as datas em `timestamptz`/UTC
 - [x] Migration versionada no repo (SQL puro)
+- [x] Schema completo `001` a `004` aplicado e verificado no Neon de
+      homologação; não há dados operacionais inseridos
 - [x] Executor manual `npm run migrate` aplica migrations em ordem e bloqueia
       alteração retroativa por checksum; não é executado na inicialização
 - [x] Camada `reporting` versionada em `db/migrations/002_reporting_views.sql`,
