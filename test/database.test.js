@@ -81,6 +81,15 @@ test('database factory requires DATABASE_URL when it creates the pool', () => {
   assert.throws(() => createDatabase(), /DATABASE_URL is required/);
 });
 
+test('ping verifies PostgreSQL connectivity without reading operational data', async () => {
+  const pool = createPool();
+  const database = createDatabase({ pool });
+
+  await database.ping();
+
+  assert.deepEqual(pool.calls, ['select 1']);
+});
+
 test('persistWebhookMessage atomically saves a normalized webhook message', async () => {
   const calls = [];
   const client = {

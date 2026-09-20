@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import app, { app as namedApp } from '../src/app.js';
+import app, { app as namedApp, createApp } from '../src/app.js';
+
+async function withServer(serverApp, callback) {
+  const server = serverApp.listen(0);
+
+  try {
+    await new Promise((resolve) => server.once('listening', resolve));
+    return await callback(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
 
 test('Express app has a default export compatible with Vercel', () => {
   assert.equal(app, namedApp);
@@ -18,6 +29,50 @@ test('GET /health returns the health contract', async (t) => {
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: 'ok' });
+});
+
+test('GET /health/ready keeps the API unavailable for webhooks without a database', async () => {
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/health/ready`);
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      status: 'not_ready',
+      database: 'not_configured',
+    });
+  });
+});
+
+test('GET /health/ready confirms database connectivity without exposing connection details', async () => {
+  const appWithDatabase = createApp({
+    database: { ping: async () => undefined },
+  });
+
+  await withServer(appWithDatabase, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/health/ready`);
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      status: 'ready',
+      database: 'connected',
+    });
+  });
+});
+
+test('GET /health/ready hides a database failure behind a stable response', async () => {
+  const appWithUnavailableDatabase = createApp({
+    database: { ping: async () => { throw new Error('connection string leaked'); } },
+  });
+
+  await withServer(appWithUnavailableDatabase, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/health/ready`);
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      status: 'not_ready',
+      database: 'unavailable',
+    });
+  });
 });
 
 test('unknown routes return a stable JSON error contract', async (t) => {

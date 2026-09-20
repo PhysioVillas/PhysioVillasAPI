@@ -105,6 +105,10 @@ function createDatabase({ connectionString, pool } = {}) {
     return insertMessageWith(resolvedPool, message);
   }
 
+  async function ping() {
+    await resolvedPool.query('select 1');
+  }
+
   async function persistWebhookMessage({ contact, message }) {
     const client = await resolvedPool.connect();
 
@@ -123,7 +127,7 @@ function createDatabase({ connectionString, pool } = {}) {
     }
   }
 
-  return { insertMessage, persistWebhookMessage, upsertContact };
+  return { insertMessage, persistWebhookMessage, ping, upsertContact };
 }
 
 export { createDatabase };

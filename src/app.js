@@ -2,7 +2,7 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { errorHandler, notFoundHandler } from './middleware/errorHandlers.js';
 import { openApiDocument } from './openapi.js';
-import { healthRouter } from './routes/health.js';
+import { createHealthRouter } from './routes/health.js';
 import { createInfobipWebhooksRouter } from './routes/infobipWebhooks.js';
 import { createMessagesRouter } from './routes/messages.js';
 
@@ -20,7 +20,7 @@ function createApp({
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, {
     customSiteTitle: 'ChatManager API Docs',
   }));
-  app.use('/health', healthRouter);
+  app.use('/health', createHealthRouter({ database }));
   app.use('/webhooks/infobip', createInfobipWebhooksRouter({
     database,
     webhookToken: infobipWebhookToken,

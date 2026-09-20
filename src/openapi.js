@@ -14,6 +14,15 @@ const openApiDocument = {
         },
       },
     },
+    '/health/ready': {
+      get: {
+        summary: 'Confirma que o banco configurado está acessível',
+        responses: {
+          200: { description: 'Aplicação e banco prontos para receber webhooks' },
+          503: { description: 'Banco ainda não configurado ou indisponível' },
+        },
+      },
+    },
     '/webhooks/infobip/inbound': {
       post: {
         summary: 'Recebe evento de mensagem WhatsApp da Infobip',

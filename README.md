@@ -21,9 +21,10 @@ BI**, conectado direto no Neon.
 ## Status atual
 
 **API-01 concluída localmente.** Há um scaffold
-Node.js/Express em ESM, com `GET /health` e export default compatível com
-Vercel. A integração segura contém apenas a validação sem envio da Messages
-API; o schema PostgreSQL está versionado, mas ainda não foi aplicado no Neon.
+Node.js/Express em ESM, com `GET /health`, `GET /health/ready` e export default
+compatível com Vercel. A integração segura contém apenas a validação sem envio
+da Messages API; o schema PostgreSQL está versionado e foi aplicado no Neon de
+homologação.
 O receptor local de webhook normaliza eventos de entrada conhecidos e permanece
 desligado até banco e token de webhook serem configurados.
 O endpoint interno de validação de mensagens permanece desligado até receber as
