@@ -4,6 +4,7 @@ import {
   InfobipMessagesApiError,
   buildTemplateMessage,
   createInfobipMessagesClient,
+  validateSendAt,
 } from '../src/services/infobipMessagesClient.js';
 
 const credentials = {
@@ -91,15 +92,24 @@ test('validateTextMessage accepts the optional scheduling field without sending'
     },
   });
 
+  const futureSendAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
   await client.validateTextMessage({
     ...message,
-    sendAt: '2026-10-01T12:00:00.000Z',
+    sendAt: futureSendAt,
   });
 
-  assert.equal(JSON.parse(request[1].body).messages[0].sendAt, '2026-10-01T12:00:00.000Z');
+  assert.equal(JSON.parse(request[1].body).messages[0].sendAt, futureSendAt);
   await assert.rejects(
     client.validateTextMessage({ ...message, sendAt: 'not-a-date' }),
     /sendAt must be a valid ISO 8601 timestamp/,
+  );
+});
+
+test('schedule validation refuses a time in the past before any Infobip request', () => {
+  assert.throws(
+    () => validateSendAt('2000-01-01T00:00:00.000Z'),
+    /must be in the future/,
   );
 });
 
@@ -113,12 +123,15 @@ test('template validation uses the validation endpoint and maps parameters by pl
     },
   });
 
+  const futureSendAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
   await client.validateTemplateMessage({
     sender: 'sender',
     to: 'recipient',
     templateName: 'appointment_reminder',
     language: 'pt_BR',
     parameters: ['Luiz', '10:00'],
+    sendAt: futureSendAt,
   });
 
   assert.equal(calls[0][0], 'https://example.api.infobip.com/messages-api/1/messages/validate');
@@ -129,6 +142,7 @@ test('template validation uses the validation endpoint and maps parameters by pl
       destinations: [{ to: 'recipient' }],
       content: { body: { 1: 'Luiz', 2: '10:00', type: 'TEXT' } },
       template: { templateName: 'appointment_reminder', language: 'pt_BR' },
+      sendAt: futureSendAt,
     }],
   });
 });

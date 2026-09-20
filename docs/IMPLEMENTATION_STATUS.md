@@ -106,6 +106,11 @@ configuração explícita. A rota interna correspondente não chama o endpoint d
 envio e não persiste valores de parâmetros. A primeira validação com um template
 real continua dependente de um remetente elegível e de template aprovado.
 
+Para agendamento, `sendAt` precisa ser uma data ISO 8601 futura tanto para
+texto quanto para template. A regra impede que uma integração posterior trate
+um agendamento vencido como envio imediato; ela não supõe limites máximos da
+Infobip, que continuam pendentes de confirmação no canal WhatsApp.
+
 A persistência de uma mensagem de webhook é atômica no código: contato e
 mensagem são gravados na mesma transação, com rollback e liberação do cliente
 em caso de erro. A rota `POST /webhooks/infobip/inbound` agora recebe o

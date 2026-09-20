@@ -291,13 +291,15 @@ separada `/messages/schedule`.
       qualquer chamada externa
 - [x] Rota de validação repassa `sendAt` ao cliente local, coberta por teste
       sem disparar mensagem
+- [x] Validação local exige que `sendAt` seja ISO 8601 e esteja no futuro para
+      texto e template, antes de qualquer chamada à Infobip
 - [ ] `sendAt` testado de ponta a ponta contra a conta real (mensagem chega no horário agendado)
 - [ ] `messageId` de retorno usado como `infobip_message_id` para idempotência
 - [ ] Confirmado limite de `sendAt` para WhatsApp especificamente (180 dias é
       o limite documentado para outros canais, ex: SMS — não confirmado ainda
       para WhatsApp)
 - [ ] Erros e limites de janela (tempo mínimo/máximo no futuro) tratados
-- [ ] Bloco `@openapi` atualizado com o parâmetro `sendAt`
+- [x] OpenAPI expõe `sendAt` nas rotas de validação de texto e template
 
 - **Depende de:** API-03
 

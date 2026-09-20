@@ -15,16 +15,26 @@ function normalizeBaseUrl(baseUrl) {
   return baseUrl.trim().replace(/\/$/, '');
 }
 
+function validateSendAt(sendAt) {
+  if (sendAt === undefined) {
+    return;
+  }
+
+  if (typeof sendAt !== 'string' || Number.isNaN(Date.parse(sendAt))) {
+    throw new TypeError('sendAt must be a valid ISO 8601 timestamp when provided.');
+  }
+
+  if (Date.parse(sendAt) <= Date.now()) {
+    throw new TypeError('sendAt must be in the future when provided.');
+  }
+}
+
 function buildTextMessage({ sender, to, text, sendAt }) {
   if (!sender || !to || !text) {
     throw new TypeError('sender, to, and text are required.');
   }
 
-  if (sendAt !== undefined && (
-    typeof sendAt !== 'string' || Number.isNaN(Date.parse(sendAt))
-  )) {
-    throw new TypeError('sendAt must be a valid ISO 8601 timestamp when provided.');
-  }
+  validateSendAt(sendAt);
 
   const message = {
     channel: 'WHATSAPP',
@@ -56,11 +66,7 @@ function buildTemplateMessage({ sender, to, templateName, language, parameters =
     throw new TypeError('parameters must be an array of non-empty strings.');
   }
 
-  if (sendAt !== undefined && (
-    typeof sendAt !== 'string' || Number.isNaN(Date.parse(sendAt))
-  )) {
-    throw new TypeError('sendAt must be a valid ISO 8601 timestamp when provided.');
-  }
+  validateSendAt(sendAt);
 
   const body = { type: 'TEXT' };
 
@@ -140,4 +146,5 @@ export {
   buildTextMessage,
   buildTemplateMessage,
   createInfobipMessagesClient,
+  validateSendAt,
 };
