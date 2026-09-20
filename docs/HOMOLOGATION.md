@@ -25,6 +25,13 @@ Sem as variáveis da Infobip, `POST /messages/validate` permanece em `503` e
 não consegue enviar mensagens. Sem `INFOBIP_WEBHOOK_TOKEN`, o webhook também
 permanece em `503`. Esse é o estado desejado para a primeira publicação.
 
+Em 2026-09-20, a mesma configuração foi exercitada localmente antes do
+preview: `GET /health` e `GET /docs.json` responderam `200`; `GET
+/health/ready` e `POST /messages/validate` responderam `503` sem variáveis de
+banco ou Infobip. Isso confirma que uma primeira publicação não envia
+mensagens por acidente e só fica pronta para webhook após configurar o banco e
+o token correspondente.
+
 ## Sequência de provisionamento
 
 1. As migrations `001_initial_schema.sql` e `002_reporting_views.sql` foram
