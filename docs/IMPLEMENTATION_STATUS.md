@@ -220,3 +220,8 @@ A versão seguinte incluiu a persistência atômica do recibo de envio autorizad
 e também foi publicada apenas como Preview. A verificação externa repetiu
 `/health` em `200` e `/health/ready` em `503/not_configured`; não houve
 configuração de banco, token interno, webhook ou credencial Infobip.
+
+O ajuste posterior para impedir regressão de status de entrega por eventos fora
+de ordem foi validado no Preview nas mesmas condições. O ambiente continuou
+respondendo `200` em `/health` e `503/not_configured` em `/health/ready`, sem
+qualquer capacidade de envio ou integração externa.

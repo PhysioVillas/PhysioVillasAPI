@@ -61,6 +61,11 @@ quarta publicação de **Preview** foi concluída e consultada em 2026-09-20.
 `503/not_configured`, confirmando que o novo código foi publicado sem habilitar
 banco, webhook ou chamadas à Infobip. A publicação permaneceu em Preview.
 
+O Preview seguinte incluiu a proteção contra relatórios de entrega fora de
+ordem e repetiu os mesmos limites: `GET /health` em `200` e
+`GET /health/ready` em `503/not_configured`. Não houve promoção, segredo de
+banco, webhook, credencial ou chamada à Infobip.
+
 ## Sequência de provisionamento
 
 1. As migrations `001_initial_schema.sql` a `005_active_conversations.sql`

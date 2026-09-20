@@ -260,6 +260,8 @@ Neon e o deploy do backend.)*
       e instante de entrega; preço e payload bruto não são persistidos
 - [x] Atualização de entrega não regride status já mais recente: eventos fora
       de ordem são ignorados pelo instante `doneAt`, sem guardar payload bruto
+- [x] Proteção contra eventos fora de ordem publicada e verificada em Preview
+      isolado (`/health` 200; `/health/ready` 503 sem banco ou Infobip)
 - [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
       gravando com `direction: 'out'`, `sent_via: 'business_app'`
 - [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em
