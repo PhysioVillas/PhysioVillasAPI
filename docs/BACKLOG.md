@@ -262,6 +262,9 @@ Neon e o deploy do backend.)*
       de ordem são ignorados pelo instante `doneAt`, sem guardar payload bruto
 - [x] Proteção contra eventos fora de ordem publicada e verificada em Preview
       isolado (`/health` 200; `/health/ready` 503 sem banco ou Infobip)
+- [x] Contrato público de entrega reconciliado com a Infobip: `messageId`,
+      `doneAt` e `status.name` sustentam o parser atual; coexistência continua
+      pendente de payload real, sem criar subscription ou webhook
 - [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
       gravando com `direction: 'out'`, `sent_via: 'business_app'`
 - [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em

@@ -1,6 +1,6 @@
 # Regras de Integração Infobip — evidências vigentes
 
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 Este documento separa fatos observados na conta de teste das decisões de
 produção. Não registra chaves, URLs de conta, números de telefone, remetentes
@@ -81,6 +81,28 @@ Para a autorização da Messages API, ver
 [escopos de chaves da Infobip](https://www.infobip.com/docs/essentials/api-essentials/api-authorization).
 Para expiração e rotação, ver [autenticação por chave de API](https://www.infobip.com/docs/essentials/api-essentials/api-authentication)
 e [gestão de chaves com escopo](https://www.infobip.com/docs/cpaas-x/security/manage-api-keys).
+
+## Contrato público de relatórios — conferido em 2026-09-20
+
+A documentação oficial da Infobip confirma que a Messages API pode apontar
+webhooks de entrega e leitura por mensagem, e que também há subscriptions de
+canal para eventos. Para relatórios de entrega WhatsApp, `messageId` é o
+identificador de correlação e o exemplo público contém `doneAt` e
+`status.name`. O backend já guarda somente esses campos necessários (além do
+erro mapeado), ignora preço e payload bruto e não deixa um evento com `doneAt`
+anterior reverter o status mais recente.
+
+Essa evidência confirma o contrato local de relatórios, mas não cria webhook,
+subscription ou `notifyURL`: essas configurações continuam pendentes do
+remetente/WABA real e de uma URL pública protegida. A documentação pública
+consultada ainda não oferece um payload reproduzível para os ecos de
+coexistência `smb_message_echoes`; esse parser continua condicionado a uma
+captura autorizada na conta da clínica.
+
+Fontes oficiais: [Messages API — envio e webhooks por mensagem](https://www.infobip.com/docs/messages-api/send-a-message),
+[webhooks de relatórios](https://www.infobip.com/docs/reporting/webhooks),
+[exemplo de relatório de entrega WhatsApp](https://www.infobip.com/docs/whatsapp/manage-integration/usernames-and-user-ids)
+e [eventos disponíveis em subscriptions](https://www.infobip.com/docs/subscriptions/available-events).
 
 ## Pendências antes de implementar a integração
 
