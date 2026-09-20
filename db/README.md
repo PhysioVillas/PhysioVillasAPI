@@ -12,10 +12,11 @@ de `migrations/`, registra o checksum de cada um em `schema_migrations` e
 recusa uma migration já aplicada que tenha sido alterada. Ele não é executado
 na inicialização da API ou no deploy.
 
-Alternativamente, execute no console SQL do Neon, nesta ordem,
-`migrations/001_initial_schema.sql` e `migrations/002_reporting_views.sql`.
-Depois, `GET /health/ready` deve confirmar que as duas tabelas operacionais e
-a visão analítica estão presentes antes de liberar o webhook em um preview.
+Alternativamente, execute no console SQL do Neon, em ordem, os arquivos
+`migrations/001_initial_schema.sql` a
+`migrations/005_active_conversations.sql`. Depois, `GET /health/ready` deve
+confirmar tabelas operacionais, a conversa ativa por contato, a visão analítica
+e a coluna de entrega antes de liberar o webhook em um preview.
 
 Não registre a URL de conexão, usuários, senhas, números de telefone ou chaves
 de API neste repositório.

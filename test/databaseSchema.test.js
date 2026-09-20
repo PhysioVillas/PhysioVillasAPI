@@ -5,6 +5,7 @@ import test from 'node:test';
 const schemaPath = new URL('../db/migrations/001_initial_schema.sql', import.meta.url);
 const reportingSchemaPath = new URL('../db/migrations/002_reporting_views.sql', import.meta.url);
 const deliveryStatusSchemaPath = new URL('../db/migrations/004_message_delivery_status.sql', import.meta.url);
+const activeConversationSchemaPath = new URL('../db/migrations/005_active_conversations.sql', import.meta.url);
 
 test('initial database migration preserves the reporting and webhook invariants', async () => {
   const schema = await readFile(schemaPath, 'utf8');
@@ -36,4 +37,14 @@ test('delivery-status migration stores only the delivery update instant', async 
   assert.match(schema, /create index if not exists messages_status_updated_at_idx/i);
   assert.doesNotMatch(schema, /price/i);
   assert.doesNotMatch(schema, /payload/i);
+});
+
+test('active-conversation migration allows only one open operational conversation per contact', async () => {
+  const schema = await readFile(activeConversationSchemaPath, 'utf8');
+
+  assert.match(schema, /create unique index if not exists conversations_one_open_per_contact_idx/i);
+  assert.match(schema, /on conversations \(wa_id\)/i);
+  assert.match(schema, /where status = 'open' and wa_id is not null/i);
+  const sqlWithoutComments = schema.replace(/^--.*$/gm, '');
+  assert.doesNotMatch(sqlWithoutComments, /body|triage|diagnos/i);
 });

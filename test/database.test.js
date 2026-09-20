@@ -49,9 +49,10 @@ test('insertMessage is parameterized and ignores a duplicate Infobip message ide
   });
 
   assert.match(pool.calls[0].text, /on conflict \(infobip_message_id\) do nothing/i);
-  assert.deepEqual(pool.calls[0].values.slice(0, 8), [
+  assert.deepEqual(pool.calls[0].values.slice(0, 9), [
     'event-id',
     'contact-id',
+    null,
     'out',
     'api',
     'Hello',
@@ -126,6 +127,8 @@ test('verifySchema requires the operational tables and reporting view', async ()
         rows: [{
           contacts_exists: true,
           messages_exists: true,
+          conversations_exists: true,
+          conversations_index_exists: true,
           reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
@@ -137,6 +140,8 @@ test('verifySchema requires the operational tables and reporting view', async ()
   await database.verifySchema();
 
   assert.match(pool.calls[0].text, /to_regclass\('public\.contacts'\)/i);
+  assert.match(pool.calls[0].text, /to_regclass\('public\.conversations'\)/i);
+  assert.match(pool.calls[0].text, /conversations_one_open_per_contact_idx/i);
   assert.match(pool.calls[0].text, /reporting\.daily_message_metrics/i);
   assert.match(pool.calls[0].text, /column_name = 'status_updated_at'/i);
 });
@@ -148,6 +153,8 @@ test('verifySchema rejects an incomplete database before webhooks are accepted',
         rows: [{
           contacts_exists: true,
           messages_exists: false,
+          conversations_exists: true,
+          conversations_index_exists: true,
           reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
@@ -165,6 +172,8 @@ test('verifySchema requires the status-update column before delivery reports are
         rows: [{
           contacts_exists: true,
           messages_exists: true,
+          conversations_exists: true,
+          conversations_index_exists: true,
           reporting_view_exists: true,
           delivery_status_column_exists: false,
         }],
@@ -186,7 +195,13 @@ test('persistWebhookMessage atomically saves a normalized webhook message', asyn
       }
 
       return {
-        rows: [query.text.includes('insert into contacts') ? { waId: 'contact-id' } : { id: 'message-id' }],
+        rows: [
+          query.text.includes('insert into contacts')
+            ? { waId: 'contact-id' }
+            : query.text.includes('insert into conversations')
+              ? { id: 'conversation-id', wa_id: 'contact-id', status: 'open' }
+              : { id: 'message-id' },
+        ],
       };
     },
     release: () => calls.push('release'),
@@ -202,13 +217,16 @@ test('persistWebhookMessage atomically saves a normalized webhook message', asyn
 
   assert.deepEqual(result, {
     contact: { waId: 'contact-id' },
+    conversation: { id: 'conversation-id', wa_id: 'contact-id', status: 'open' },
     message: { id: 'message-id' },
   });
   assert.equal(calls[0], 'begin');
   assert.match(calls[1].text, /insert into contacts/i);
-  assert.match(calls[2].text, /insert into messages/i);
-  assert.equal(calls[3], 'commit');
-  assert.equal(calls[4], 'release');
+  assert.match(calls[2].text, /insert into conversations/i);
+  assert.match(calls[3].text, /insert into messages/i);
+  assert.equal(calls[4], 'commit');
+  assert.equal(calls[5], 'release');
+  assert.equal(calls[3].values[2], 'conversation-id');
 });
 
 test('persistWebhookMessage rolls back and releases the database client on failure', async () => {

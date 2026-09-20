@@ -43,12 +43,13 @@ falta de configuração, portanto não houve chamada à Infobip nem envio.
 
 ## Sequência de provisionamento
 
-1. As migrations `001_initial_schema.sql` a `004_message_delivery_status.sql`
+1. As migrations `001_initial_schema.sql` a `005_active_conversations.sql`
    foram aplicadas manualmente no editor SQL em 2026-09-20 e verificadas por
    consulta de leitura: `public.contacts`, `public.conversations`,
    `public.message_templates`, `public.faq_entries`, `public.messages`,
    `reporting.daily_message_metrics` e a coluna `messages.status_updated_at`
-   existem. Não foram inseridos dados operacionais. Com a URL mantida apenas no
+   existem; o índice parcial que limita cada contato a uma conversa aberta
+   também foi aplicado. Não foram inseridos dados operacionais. Com a URL mantida apenas no
    ambiente, `npm run migrate` continua sendo o caminho reprodutível: ele
    reaplica operações idempotentes, registra checksums e não é disparado no
    deploy.

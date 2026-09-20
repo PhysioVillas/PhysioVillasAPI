@@ -210,7 +210,7 @@ Neon e o deploy do backend.)*
       de eco de coexistência do celular
 - [x] Todas as datas em `timestamptz`/UTC
 - [x] Migration versionada no repo (SQL puro)
-- [x] Schema completo `001` a `004` aplicado e verificado no Neon de
+- [x] Schema completo `001` a `005` aplicado e verificado no Neon de
       homologação; não há dados operacionais inseridos
 - [x] Executor manual `npm run migrate` aplica migrations em ordem e bloqueia
       alteração retroativa por checksum; não é executado na inicialização
@@ -243,6 +243,9 @@ Neon e o deploy do backend.)*
 - [x] Upsert de contato + insert idempotente de mensagem (por `infobip_message_id`)
       implementados localmente de forma atômica; aguardam banco Neon e parser
       do payload real para uso em webhook
+- [x] Evento recebido é associado atomicamente à única conversa operacional
+      aberta do contato; a conversa só guarda estado e datas, nunca triagem ou
+      conteúdo clínico
 - [x] Relatório de entrega documentado (`results[].messageId`, `status.name`,
       `doneAt` e erro) é normalizado localmente e atualiza somente status, erro
       e instante de entrega; preço e payload bruto não são persistidos

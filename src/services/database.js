@@ -51,6 +51,7 @@ function createDatabase({ connectionString, pool } = {}) {
   async function insertMessageWith(executor, {
     infobipMessageId = null,
     waId = null,
+    conversationId = null,
     direction,
     sentVia = null,
     body = null,
@@ -72,6 +73,7 @@ function createDatabase({ connectionString, pool } = {}) {
         insert into messages (
           infobip_message_id,
           wa_id,
+          conversation_id,
           direction,
           sent_via,
           body,
@@ -80,14 +82,15 @@ function createDatabase({ connectionString, pool } = {}) {
           error_code,
           created_at
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, coalesce($9, now()))
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($10, now()))
         on conflict (infobip_message_id) do nothing
-        returning id, infobip_message_id, wa_id, direction, sent_via, body,
+        returning id, infobip_message_id, wa_id, conversation_id, direction, sent_via, body,
           message_type, status, error_code, created_at
       `,
       values: [
         infobipMessageId,
         waId,
+        conversationId,
         direction,
         sentVia,
         body,
@@ -103,6 +106,32 @@ function createDatabase({ connectionString, pool } = {}) {
 
   async function insertMessage(message) {
     return insertMessageWith(resolvedPool, message);
+  }
+
+  async function findOrCreateOpenConversationWith(executor, {
+    waId,
+    lastMessageAt = null,
+  }) {
+    if (!waId) {
+      throw new TypeError('waId is required.');
+    }
+
+    const result = await executor.query({
+      text: `
+        insert into conversations (wa_id, last_message_at)
+        values ($1, $2)
+        on conflict (wa_id) where status = 'open' and wa_id is not null do update
+        set last_message_at = case
+          when excluded.last_message_at is null then conversations.last_message_at
+          when conversations.last_message_at is null then excluded.last_message_at
+          else greatest(conversations.last_message_at, excluded.last_message_at)
+        end
+        returning id, wa_id, status, last_message_at
+      `,
+      values: [waId, lastMessageAt],
+    });
+
+    return result.rows[0];
   }
 
   async function recordDeliveryStatus({
@@ -145,6 +174,8 @@ function createDatabase({ connectionString, pool } = {}) {
         select
           to_regclass('public.contacts') is not null as contacts_exists,
           to_regclass('public.messages') is not null as messages_exists,
+          to_regclass('public.conversations') is not null as conversations_exists,
+          to_regclass('public.conversations_one_open_per_contact_idx') is not null as conversations_index_exists,
           to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists,
           exists (
             select 1
@@ -160,6 +191,8 @@ function createDatabase({ connectionString, pool } = {}) {
     if (
       schema?.contacts_exists !== true ||
       schema?.messages_exists !== true ||
+      schema?.conversations_exists !== true ||
+      schema?.conversations_index_exists !== true ||
       schema?.reporting_view_exists !== true ||
       schema?.delivery_status_column_exists !== true
     ) {
@@ -173,10 +206,17 @@ function createDatabase({ connectionString, pool } = {}) {
     try {
       await client.query('begin');
       const persistedContact = await upsertContactWith(client, contact);
-      const persistedMessage = await insertMessageWith(client, message);
+      const conversation = await findOrCreateOpenConversationWith(client, {
+        waId: contact.waId,
+        lastMessageAt: message.createdAt ?? contact.lastMessageAt,
+      });
+      const persistedMessage = await insertMessageWith(client, {
+        ...message,
+        conversationId: conversation.id,
+      });
       await client.query('commit');
 
-      return { contact: persistedContact, message: persistedMessage };
+      return { contact: persistedContact, conversation, message: persistedMessage };
     } catch (error) {
       await client.query('rollback');
       throw error;

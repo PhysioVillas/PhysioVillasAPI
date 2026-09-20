@@ -6,7 +6,7 @@
 
 O corte técnico local está concluído: há scaffold Node.js com Express em ESM e
 `GET /health`. O registro de validação local informa sucesso para `npm run
-check` e `npm test`, com 32/32 testes passando em 2026-09-19.
+check` e `npm test`, com 55/55 testes passando em 2026-09-20.
 
 A documentação interativa está disponível em `/docs`, com a especificação
 OpenAPI 3.1 em `/docs.json`. Ela cobre as rotas existentes, incluindo as
@@ -57,7 +57,7 @@ A Vercel foi conferida em uma conta Hobby de homologação e o banco Neon
 `chatmanager-homolog` foi criado na região São Paulo, no plano Free, somente
 com Postgres e sem projeto conectado. Em 2026-09-20, o editor SQL aplicou as
 migrations operacionais e a visão de métricas; uma consulta de leitura
-confirmou `public.contacts`, `public.messages` e
+confirmou `public.contacts`, `public.conversations`, `public.messages` e
 `reporting.daily_message_metrics`. Não há credenciais Infobip, webhook,
 domínio ou envio configurados no ambiente. O plano de configuração sem envio
 de WhatsApp e o roteiro de validação estão em `docs/HOMOLOGATION.md`.
@@ -111,9 +111,11 @@ texto quanto para template. A regra impede que uma integração posterior trate
 um agendamento vencido como envio imediato; ela não supõe limites máximos da
 Infobip, que continuam pendentes de confirmação no canal WhatsApp.
 
-A persistência de uma mensagem de webhook é atômica no código: contato e
-mensagem são gravados na mesma transação, com rollback e liberação do cliente
-em caso de erro. A rota `POST /webhooks/infobip/inbound` agora recebe o
+A persistência de uma mensagem de webhook é atômica no código: contato,
+conversa operacional aberta e mensagem são gravados na mesma transação, com
+rollback e liberação do cliente em caso de erro. A migração `005` garante no
+máximo uma conversa aberta por contato, sem guardar triagem ou conteúdo
+clínico. A rota `POST /webhooks/infobip/inbound` agora recebe o
 envelope WhatsApp documentado pela Infobip (`results`), normaliza apenas os
 campos necessários e o encaminha à persistência. Eventos que não se enquadram
 no contrato atual recebem `202` e não têm o payload bruto armazenado.
@@ -178,7 +180,7 @@ variável, a API permanece sem banco e sem cliente Infobip. Isso torna a
 transição para persistência real verificável em teste, sem introduzir um store
 em memória ou abrir conexão externa na inicialização.
 
-Após essas entregas, `npm test` passou com **45 testes** e `npm run check`
+Após essas entregas, `npm test` passou com **55 testes** e `npm run check`
 concluiu sem erro.
 
 ## Preview Vercel isolado

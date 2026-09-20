@@ -52,6 +52,9 @@ schema `reporting`, não às tabelas operacionais em `public`.
    catálogos operacionais de templates e FAQ.
 4. `004_message_delivery_status.sql` registra o instante da última atualização
    de entrega sem reter preço ou payload de relatório.
+5. `005_active_conversations.sql` garante no máximo uma conversa aberta por
+   contato, para que cada evento recebido possa ser ligado ao atendimento
+   operacional ativo sem criar registros de triagem.
 
 As migrações são aplicadas pelo administrador do Neon, em ordem, com uma
 conexão SSL. Elas não criam uma conta, banco externo, usuário ou senha.
