@@ -259,3 +259,82 @@ test('persistWebhookMessage rolls back and releases the database client on failu
   assert.equal(calls.at(-2), 'rollback');
   assert.equal(calls.at(-1), 'release');
 });
+
+test('persistOutboundMessage atomically saves a successful API receipt for delivery updates', async () => {
+  const calls = [];
+  const client = {
+    query: async (query) => {
+      calls.push(query);
+
+      if (typeof query === 'string') {
+        return { rows: [] };
+      }
+
+      return {
+        rows: [
+          query.text.includes('insert into contacts')
+            ? { wa_id: 'contact-id' }
+            : query.text.includes('insert into conversations')
+              ? { id: 'conversation-id', wa_id: 'contact-id', status: 'open' }
+              : { id: 'message-id', infobip_message_id: 'outbound-id' },
+        ],
+      };
+    },
+    release: () => calls.push('release'),
+  };
+  const database = createDatabase({
+    pool: { connect: async () => client },
+  });
+
+  const result = await database.persistOutboundMessage({
+    infobipMessageId: 'outbound-id',
+    waId: 'contact-id',
+    body: 'Mensagem autorizada',
+    createdAt: '2026-09-20T18:00:00.000Z',
+  });
+
+  assert.deepEqual(result, {
+    contact: { wa_id: 'contact-id' },
+    conversation: { id: 'conversation-id', wa_id: 'contact-id', status: 'open' },
+    message: { id: 'message-id', infobip_message_id: 'outbound-id' },
+  });
+  assert.equal(calls[0], 'begin');
+  assert.match(calls[1].text, /insert into contacts/i);
+  assert.match(calls[2].text, /insert into conversations/i);
+  assert.match(calls[3].text, /insert into messages/i);
+  assert.equal(calls[3].values[0], 'outbound-id');
+  assert.equal(calls[3].values[2], 'conversation-id');
+  assert.deepEqual(calls[3].values.slice(3, 9), [
+    'out',
+    'api',
+    'Mensagem autorizada',
+    'text',
+    'accepted',
+    null,
+  ]);
+  assert.equal(calls[4], 'commit');
+  assert.equal(calls[5], 'release');
+});
+
+test('persistOutboundMessage rejects incomplete receipts before opening a database transaction', async () => {
+  const database = createDatabase({
+    pool: {
+      connect: async () => {
+        throw new Error('must not connect');
+      },
+    },
+  });
+
+  await assert.rejects(
+    database.persistOutboundMessage({ waId: 'contact-id', body: 'Mensagem' }),
+    /infobipMessageId is required/,
+  );
+  await assert.rejects(
+    database.persistOutboundMessage({ infobipMessageId: 'outbound-id', body: 'Mensagem' }),
+    /waId is required/,
+  );
+  await assert.rejects(
+    database.persistOutboundMessage({ infobipMessageId: 'outbound-id', waId: 'contact-id' }),
+    /body is required/,
+  );
+});

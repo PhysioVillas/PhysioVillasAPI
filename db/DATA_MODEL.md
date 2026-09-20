@@ -32,6 +32,13 @@ O webhook não guarda o payload bruto da Infobip. Isso reduz retenção acidenta
 de campos desconhecidos e deixa o parser responsável por aceitar somente dados
 explicitamente mapeados.
 
+Quando um envio vier a ser autorizado e a Messages API aceitar a solicitação,
+o backend usa o recibo (`messageId`) para gravar atomicamente o contato, a
+conversa aberta e a mensagem de saída com `direction: 'out'` e
+`sent_via: 'api'`. Essa operação ainda não é acionada por nenhuma rota de
+envio: a API atual só oferece validação e permanece incapaz de disparar
+mensagens sem uma decisão específica.
+
 ## Módulo analítico (`reporting`)
 
 `reporting.daily_message_metrics` é a primeira interface estável para o Power

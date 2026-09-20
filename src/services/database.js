@@ -225,8 +225,63 @@ function createDatabase({ connectionString, pool } = {}) {
     }
   }
 
+  async function persistOutboundMessage({
+    infobipMessageId,
+    waId,
+    body,
+    messageType = 'text',
+    status = 'accepted',
+    createdAt = null,
+  }) {
+    if (!infobipMessageId) {
+      throw new TypeError('infobipMessageId is required.');
+    }
+
+    if (!waId) {
+      throw new TypeError('waId is required.');
+    }
+
+    if (typeof body !== 'string' || body.trim() === '') {
+      throw new TypeError('body is required.');
+    }
+
+    const client = await resolvedPool.connect();
+
+    try {
+      await client.query('begin');
+      const contact = await upsertContactWith(client, {
+        waId,
+        lastMessageAt: createdAt,
+      });
+      const conversation = await findOrCreateOpenConversationWith(client, {
+        waId,
+        lastMessageAt: createdAt,
+      });
+      const message = await insertMessageWith(client, {
+        infobipMessageId,
+        waId,
+        conversationId: conversation.id,
+        direction: 'out',
+        sentVia: 'api',
+        body,
+        messageType,
+        status,
+        createdAt,
+      });
+      await client.query('commit');
+
+      return { contact, conversation, message };
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   return {
     insertMessage,
+    persistOutboundMessage,
     persistWebhookMessage,
     ping,
     recordDeliveryStatus,

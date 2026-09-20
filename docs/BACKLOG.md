@@ -289,6 +289,9 @@ Ambas as rotas chamam o mesmo cliente da **Messages API**
       autorização específica para disparar uma mensagem
 - [ ] Envio de template via Messages API — formato de `content` confirmado em `SET-05`
 - [x] Erros da Infobip são encapsulados localmente com `status`/`details`
+- [x] Recibo de envio autorizado tem persistência local atômica preparada:
+      `messageId`, contato e conversa aberta são gravados juntos como saída
+      `api`, sem habilitar rota de envio
 - [ ] Mensagem enviada é gravada em `messages` com `direction: 'out'`, `sent_via: 'api'`
 - [x] OpenAPI documenta as duas rotas de validação, inclusive nome, idioma e
       parâmetros de template
