@@ -14,8 +14,8 @@ async function withServer(app, callback) {
   }
 }
 
-function validationRequest(baseUrl, { token, body }) {
-  return fetch(`${baseUrl}/messages/validate`, {
+function validationRequest(baseUrl, { token, body, path = '/messages/validate' }) {
+  return fetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers: {
       ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
@@ -39,6 +39,45 @@ test('message validation route stays unavailable without an internal token and I
       },
     });
   });
+});
+
+test('template validation forwards only the template contract to the validation-only client', async () => {
+  const calls = [];
+  const app = createApp({
+    messagesClient: {
+      validateTemplateMessage: async (message) => {
+        calls.push(message);
+        return { valid: true };
+      },
+    },
+    whatsappSender: 'sender',
+    chatManagerApiToken: 'internal-token',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await validationRequest(baseUrl, {
+      token: 'internal-token',
+      path: '/messages/templates/validate',
+      body: {
+        to: '5571999990000',
+        templateName: 'appointment_reminder',
+        language: 'pt_BR',
+        parameters: ['Luiz', '10:00'],
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { validation: { valid: true } });
+  });
+
+  assert.deepEqual(calls, [{
+    sender: 'sender',
+    to: '5571999990000',
+    templateName: 'appointment_reminder',
+    language: 'pt_BR',
+    parameters: ['Luiz', '10:00'],
+    sendAt: undefined,
+  }]);
 });
 
 test('message validation route rejects unauthenticated callers before validation', async () => {

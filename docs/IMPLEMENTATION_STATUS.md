@@ -99,6 +99,13 @@ substitui o teste real de entrega agendada nem cria uma rota de envio. A rota
 interna de validação repassa esse campo e retorna erros estáveis sem expor
 detalhes da resposta da Infobip.
 
+O mesmo cliente agora valida localmente o contrato de template WhatsApp: nome,
+idioma e parâmetros ordenados são convertidos para o formato da Messages API e
+enviados somente ao endpoint `/messages-api/1/messages/validate` quando houver
+configuração explícita. A rota interna correspondente não chama o endpoint de
+envio e não persiste valores de parâmetros. A primeira validação com um template
+real continua dependente de um remetente elegível e de template aprovado.
+
 A persistência de uma mensagem de webhook é atômica no código: contato e
 mensagem são gravados na mesma transação, com rollback e liberação do cliente
 em caso de erro. A rota `POST /webhooks/infobip/inbound` agora recebe o

@@ -64,6 +64,37 @@ const openApiDocument = {
         },
       },
     },
+    '/messages/templates/validate': {
+      post: {
+        summary: 'Valida um template WhatsApp na Messages API sem enviar mensagem',
+        security: [{ ChatManagerBearer: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['to', 'templateName', 'language'],
+                properties: {
+                  to: { type: 'string', description: 'Destinatário no formato aceito pela Infobip' },
+                  templateName: { type: 'string' },
+                  language: { type: 'string', example: 'pt_BR' },
+                  parameters: { type: 'array', items: { type: 'string' } },
+                  sendAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Contrato do template válido; nenhuma mensagem foi enviada' },
+          400: { description: 'Corpo inválido' },
+          401: { description: 'Token interno inválido' },
+          502: { description: 'Infobip recusou a validação' },
+          503: { description: 'Validação ainda não configurada' },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   InfobipMessagesApiError,
+  buildTemplateMessage,
   createInfobipMessagesClient,
 } from '../src/services/infobipMessagesClient.js';
 
@@ -99,6 +100,53 @@ test('validateTextMessage accepts the optional scheduling field without sending'
   await assert.rejects(
     client.validateTextMessage({ ...message, sendAt: 'not-a-date' }),
     /sendAt must be a valid ISO 8601 timestamp/,
+  );
+});
+
+test('template validation uses the validation endpoint and maps parameters by placeholder order', async () => {
+  const calls = [];
+  const client = createInfobipMessagesClient({
+    ...credentials,
+    fetchImpl: async (...args) => {
+      calls.push(args);
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    },
+  });
+
+  await client.validateTemplateMessage({
+    sender: 'sender',
+    to: 'recipient',
+    templateName: 'appointment_reminder',
+    language: 'pt_BR',
+    parameters: ['Luiz', '10:00'],
+  });
+
+  assert.equal(calls[0][0], 'https://example.api.infobip.com/messages-api/1/messages/validate');
+  assert.deepEqual(JSON.parse(calls[0][1].body), {
+    messages: [{
+      channel: 'WHATSAPP',
+      sender: 'sender',
+      destinations: [{ to: 'recipient' }],
+      content: { body: { 1: 'Luiz', 2: '10:00', type: 'TEXT' } },
+      template: { templateName: 'appointment_reminder', language: 'pt_BR' },
+    }],
+  });
+});
+
+test('template builder rejects invalid names and placeholder values before making a request', () => {
+  assert.throws(
+    () => buildTemplateMessage({ sender: 'sender', to: 'recipient', language: 'pt_BR' }),
+    /templateName/,
+  );
+  assert.throws(
+    () => buildTemplateMessage({
+      sender: 'sender',
+      to: 'recipient',
+      templateName: 'reminder',
+      language: 'pt_BR',
+      parameters: ['valid', ''],
+    }),
+    /parameters/,
   );
 });
 

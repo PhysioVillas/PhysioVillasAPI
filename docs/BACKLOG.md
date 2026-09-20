@@ -268,12 +268,16 @@ Ambas as rotas chamam o mesmo cliente da **Messages API**
 - [x] Rota interna `POST /messages/validate` chama somente o endpoint de
       validação da Infobip; fica em `503` sem credenciais e token internos e
       retorna `401` antes da validação quando o token Bearer é inválido
+- [x] Rota interna `POST /messages/templates/validate` constrói somente o
+      contrato de template da Messages API e valida parâmetros por posição; não
+      seleciona endpoint de envio nem registra valores de parâmetros no banco
 - [ ] Envio de texto livre via Messages API contra conta real, somente com
       autorização específica para disparar uma mensagem
 - [ ] Envio de template via Messages API — formato de `content` confirmado em `SET-05`
 - [x] Erros da Infobip são encapsulados localmente com `status`/`details`
 - [ ] Mensagem enviada é gravada em `messages` com `direction: 'out'`, `sent_via: 'api'`
-- [ ] Bloco `@openapi` documentado
+- [x] OpenAPI documenta as duas rotas de validação, inclusive nome, idioma e
+      parâmetros de template
 
 - **Depende de:** SET-06, API-01, SET-05
 

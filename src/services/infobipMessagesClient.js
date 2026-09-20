@@ -45,6 +45,44 @@ function buildTextMessage({ sender, to, text, sendAt }) {
   return { messages: [message] };
 }
 
+function buildTemplateMessage({ sender, to, templateName, language, parameters = [], sendAt }) {
+  if (!sender || !to || !templateName || !language) {
+    throw new TypeError('sender, to, templateName, and language are required.');
+  }
+
+  if (!Array.isArray(parameters) || parameters.some((value) => (
+    typeof value !== 'string' || value.trim() === ''
+  ))) {
+    throw new TypeError('parameters must be an array of non-empty strings.');
+  }
+
+  if (sendAt !== undefined && (
+    typeof sendAt !== 'string' || Number.isNaN(Date.parse(sendAt))
+  )) {
+    throw new TypeError('sendAt must be a valid ISO 8601 timestamp when provided.');
+  }
+
+  const body = { type: 'TEXT' };
+
+  parameters.forEach((value, index) => {
+    body[index + 1] = value;
+  });
+
+  const message = {
+    channel: 'WHATSAPP',
+    sender,
+    destinations: [{ to }],
+    content: { body },
+    template: { templateName, language },
+  };
+
+  if (sendAt !== undefined) {
+    message.sendAt = sendAt;
+  }
+
+  return { messages: [message] };
+}
+
 async function parseJson(response) {
   try {
     return await response.json();
@@ -60,7 +98,7 @@ function createInfobipMessagesClient({ baseUrl, apiKey, fetchImpl = fetch }) {
     throw new TypeError('Infobip API key is required.');
   }
 
-  async function validateTextMessage(message) {
+  async function validateMessage(message) {
     const response = await fetchImpl(
       `${normalizedBaseUrl}/messages-api/1/messages/validate`,
       {
@@ -70,7 +108,7 @@ function createInfobipMessagesClient({ baseUrl, apiKey, fetchImpl = fetch }) {
           Authorization: `App ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(buildTextMessage(message)),
+        body: JSON.stringify(message),
       },
     );
 
@@ -86,11 +124,20 @@ function createInfobipMessagesClient({ baseUrl, apiKey, fetchImpl = fetch }) {
     return details;
   }
 
-  return { validateTextMessage };
+  async function validateTextMessage(message) {
+    return validateMessage(buildTextMessage(message));
+  }
+
+  async function validateTemplateMessage(message) {
+    return validateMessage(buildTemplateMessage(message));
+  }
+
+  return { validateTemplateMessage, validateTextMessage };
 }
 
 export {
   InfobipMessagesApiError,
   buildTextMessage,
+  buildTemplateMessage,
   createInfobipMessagesClient,
 };
