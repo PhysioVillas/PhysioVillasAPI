@@ -3,7 +3,7 @@ const openApiDocument = {
   info: {
     title: 'PhysioVilas ChatManager API',
     version: '0.1.0',
-    description: 'Backend de integração Infobip. As rotas de integração ficam desligadas até receberem suas configurações de ambiente.',
+    description: 'Backend de integração Infobip. As rotas de integração ficam desligadas até receberem suas configurações de ambiente. O identificador `wa_id` é armazenado exatamente como recebido no campo `from` do evento da Infobip; o backend não adiciona `+`, remove dígitos ou normaliza esse valor. O formato comercial definitivo depende da captura de um payload real.',
   },
   paths: {
     '/health': {

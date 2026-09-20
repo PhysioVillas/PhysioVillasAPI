@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import app, { app as namedApp, createApp } from '../src/app.js';
+import { openApiDocument } from '../src/openapi.js';
 
 async function withServer(serverApp, callback) {
   const server = serverApp.listen(0);
@@ -109,4 +110,9 @@ test('OpenAPI specification and interactive documentation are available locally'
   assert.equal((await specification.json()).openapi, '3.1.0');
   assert.equal(documentation.status, 200);
   assert.match(await documentation.text(), /swagger-ui-bundle\.js/i);
+});
+
+test('OpenAPI documents how wa_id is preserved pending a real Infobip payload', () => {
+  assert.match(openApiDocument.info.description, /campo `from`/);
+  assert.match(openApiDocument.info.description, /n[aã]o adiciona `\+`/);
 });

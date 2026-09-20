@@ -298,7 +298,9 @@ separada `/messages/schedule`.
 - [x] Swagger UI servido em `/docs`, spec OpenAPI 3.1 em `/docs.json`
 - [x] Rotas locais atuais (`/health`, webhook de entrada e validação sem envio)
       descritas com respostas de configuração e autorização
-- [ ] `info.description` explicando o formato do `wa_id` confirmado em `DOC-01`
+- [x] `info.description` explica que `wa_id` preserva o valor de `from` sem
+      normalização e registra que o formato comercial final depende de payload
+      real (`DOC-01`)
 
 - **Depende de:** API-02, API-03
 
