@@ -63,7 +63,9 @@ produção.
    `public.message_templates`, `public.faq_entries`, `public.messages`,
    `reporting.daily_message_metrics` e a coluna `messages.status_updated_at`
    existem; o índice parcial que limita cada contato a uma conversa aberta
-   também foi aplicado. Não foram inseridos dados operacionais. Com a URL mantida apenas no
+   também foi confirmado separadamente em `pg_indexes` como
+   `conversations_one_open_per_contact_idx`. Não foram inseridos dados
+   operacionais. Com a URL mantida apenas no
    ambiente, `npm run migrate` continua sendo o caminho reprodutível: ele
    reaplica operações idempotentes, registra checksums e não é disparado no
    deploy.

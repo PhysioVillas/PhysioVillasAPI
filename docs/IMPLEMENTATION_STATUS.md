@@ -126,6 +126,12 @@ envelope WhatsApp documentado pela Infobip (`results`), normaliza apenas os
 campos necessários e o encaminha à persistência. Eventos que não se enquadram
 no contrato atual recebem `202` e não têm o payload bruto armazenado.
 
+A restrição de uma conversa aberta por contato foi confirmada no Neon por uma
+consulta somente de leitura ao catálogo `pg_indexes`; o índice parcial
+`conversations_one_open_per_contact_idx` retornou exatamente uma vez e com a
+condição `status = 'open'` e `wa_id IS NOT NULL`. A verificação não leu nem
+alterou dados operacionais.
+
 O receptor é seguro por padrão: sem `DATABASE_URL` e
 `INFOBIP_WEBHOOK_TOKEN`, responde `503`; com token ausente ou incorreto,
 responde `401` antes de tocar no banco. A rota ainda não está acessível pela
