@@ -1,6 +1,6 @@
 # Backlog do Projeto — PhysioVilas ChatManager
 
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 **Escopo deste documento:** reestruturação para **Infobip + Neon**, backend
 enxuto sem frontend, sem bot próprio, sem autenticação. Detalhamento técnico
 completo em `PRD_PhysioVilas_WhatsApp.md`.
@@ -197,9 +197,8 @@ provisório + Vercel", diferente do `SET-04` de coexistência em `AT1`.
 Renumerado aqui para `SET-06` para evitar ambiguidade. Cobre o schema no
 Neon e o deploy do backend.)*
 
-- [x] Banco Neon `chatmanager-homolog` criado pela integração Vercel, plano
-      Free, região São Paulo e sem Neon Auth; migrations e projeto Vercel ainda
-      pendentes
+- [x] Banco Neon `chatmanager-homolog` criado no plano Free, região São Paulo
+      e somente com Postgres; projeto Vercel ainda pendente
 - [x] `DATABASE_URL` com `sslmode=require` documentada em `.env.example`
 - [ ] Comportamento de auto-suspend do free tier confirmado (latência após inatividade)
 - [x] Tabela `contacts` (`wa_id`, `profile_name`, `last_message_at`) definida na
@@ -214,6 +213,8 @@ Neon e o deploy do backend.)*
       alteração retroativa por checksum; não é executado na inicialização
 - [x] Camada `reporting` versionada em `db/migrations/002_reporting_views.sql`,
       com métricas agregadas sem corpo de mensagem, nome de perfil ou `wa_id`
+- [x] Migrations aplicadas no Neon de homologação e verificadas por consulta
+      de leitura (`contacts`, `messages` e `reporting.daily_message_metrics`)
 - [x] Contrato de leitura do Power BI corrigido para acesso somente ao schema
       `reporting`; mapa de módulos e retenção pendente em `db/DATA_MODEL.md`
 - [ ] Role `powerbi_reader` criado, somente leitura (`grant select` +

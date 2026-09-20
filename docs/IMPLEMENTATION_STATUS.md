@@ -1,6 +1,6 @@
 # Status de Implementação
 
-**Data do registro:** 2026-09-19
+**Data do registro:** 2026-09-20
 
 ## API-01 — concluído localmente
 
@@ -41,19 +41,19 @@ fazer chamadas de rede.
 ## SET-06 — em andamento
 
 A Vercel foi conferida em uma conta Hobby de homologação e o banco Neon
-`chatmanager-homolog` foi criado na região São Paulo, no plano Free, sem Neon
-Auth e sem projeto conectado. A Vercel informou no provisionamento que a Neon
-recebe o ID da conta Vercel, e-mail e dados de uso. O console SQL da Neon pede
-verificação do e-mail da conta antes de liberar a aplicação das migrations.
-Não há credenciais Infobip, webhook, domínio ou envio configurados no ambiente.
-O plano de configuração sem envio de WhatsApp e o roteiro de validação estão em
-`docs/HOMOLOGATION.md`.
+`chatmanager-homolog` foi criado na região São Paulo, no plano Free, somente
+com Postgres e sem projeto conectado. Em 2026-09-20, o editor SQL aplicou as
+migrations operacionais e a visão de métricas; uma consulta de leitura
+confirmou `public.contacts`, `public.messages` e
+`reporting.daily_message_metrics`. Não há credenciais Infobip, webhook,
+domínio ou envio configurados no ambiente. O plano de configuração sem envio
+de WhatsApp e o roteiro de validação estão em `docs/HOMOLOGATION.md`.
 
 A base versionada do banco está em `db/migrations/001_initial_schema.sql`.
 Ela cria `contacts` e `messages`, preserva o identificador único da Infobip para
-idempotência e separa as origens `api` e `business_app`. A migration ainda não
-foi aplicada em um banco Neon, e não há deploy na Vercel nem role real do Power
-BI; essas operações dependem do provisionamento externo.
+idempotência e separa as origens `api` e `business_app`. As migrations foram
+aplicadas uma vez no Neon de homologação, mas ainda não há deploy na Vercel nem
+role real do Power BI; essas operações dependem do provisionamento externo.
 
 O módulo `src/services/database.js` já oferece upsert parametrizado de contatos
 e inserção idempotente de mensagens, com um pool injetável para testes. Ele não

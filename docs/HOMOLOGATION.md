@@ -1,9 +1,10 @@
 # Homologação temporária — Vercel + Neon
 
-**Estado em 2026-09-19:** foi criado o banco `chatmanager-homolog` no plano
-Free da Neon, pela integração da conta Vercel Hobby, na região São Paulo
-(`gru1`) e sem o módulo Neon Auth. Não há projeto Vercel conectado, domínio,
-credencial Infobip ou envio de WhatsApp configurado.
+**Estado em 2026-09-20:** o projeto `chatmanager-homolog` foi criado no
+console Neon no plano Free, na região São Paulo e somente com Postgres ativo.
+O schema operacional e a visão de métricas foram aplicados e verificados no
+database padrão. Não há projeto Vercel conectado, domínio, credencial Infobip
+ou envio de WhatsApp configurado.
 
 ## Limite do ambiente de teste
 
@@ -26,10 +27,13 @@ permanece em `503`. Esse é o estado desejado para a primeira publicação.
 
 ## Sequência de provisionamento
 
-1. Com a URL mantida apenas no ambiente, executar `npm run migrate`. O comando
-   aplica em ordem as migrations versionadas, registra checksums e não é
-   disparado no deploy. O console SQL do Neon continua como alternativa e
-   exige a verificação do e-mail da conta Neon antes de liberar o editor.
+1. As migrations `001_initial_schema.sql` e `002_reporting_views.sql` foram
+   aplicadas manualmente no editor SQL em 2026-09-20 e verificadas por consulta
+   de leitura: `public.contacts`, `public.messages` e
+   `reporting.daily_message_metrics` existem. Com a URL mantida apenas no
+   ambiente, `npm run migrate` continua sendo o caminho reprodutível: ele
+   reaplica operações idempotentes, registra checksums e não é disparado no
+   deploy.
 2. Configurar somente `DATABASE_URL` como segredo de **Preview** no projeto
    Vercel. A URL não deve ser salva em arquivo versionado ou em documentação.
 3. Criar uma publicação de preview da revisão atual, sem domínio e sem
