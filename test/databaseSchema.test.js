@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const schemaPath = new URL('../db/migrations/001_initial_schema.sql', import.meta.url);
 const reportingSchemaPath = new URL('../db/migrations/002_reporting_views.sql', import.meta.url);
+const deliveryStatusSchemaPath = new URL('../db/migrations/004_message_delivery_status.sql', import.meta.url);
 
 test('initial database migration preserves the reporting and webhook invariants', async () => {
   const schema = await readFile(schemaPath, 'utf8');
@@ -26,4 +27,13 @@ test('reporting migration exposes only aggregate operational metrics', async () 
   assert.doesNotMatch(schema, /\bbody\b/i);
   assert.doesNotMatch(schema, /\bwa_id\b/i);
   assert.doesNotMatch(schema, /\bprofile_name\b/i);
+});
+
+test('delivery-status migration stores only the delivery update instant', async () => {
+  const schema = await readFile(deliveryStatusSchemaPath, 'utf8');
+
+  assert.match(schema, /add column if not exists status_updated_at timestamptz/i);
+  assert.match(schema, /create index if not exists messages_status_updated_at_idx/i);
+  assert.doesNotMatch(schema, /price/i);
+  assert.doesNotMatch(schema, /payload/i);
 });

@@ -13,7 +13,7 @@ histórico não fazem parte do modelo automático.
 |---|---|---|---|
 | `contacts` | webhook do ChatManager | identificador do WhatsApp, nome de perfil opcional e último contato | um registro por `wa_id` |
 | `conversations` | roteador do ChatManager | contato opcional, estado operacional, intenção atual e datas de abertura/encerramento | não contém queixa ou triagem clínica; uma conversa pode continuar mesmo se o contato for removido |
-| `messages` | webhook e, futuramente, envio autorizado | identificador da Infobip, conversa opcional, direção, origem, corpo, tipo, status, erro e data | `infobip_message_id` impede duplicação de reentregas |
+| `messages` | webhook e, futuramente, envio autorizado | identificador da Infobip, conversa opcional, direção, origem, corpo, tipo, status, erro, data e instante da última atualização de entrega | `infobip_message_id` impede duplicação de reentregas |
 | `message_templates` | sincronização administrativa futura | nome, idioma, categoria, situação de aprovação e quantidade de parâmetros | não registra valores de parâmetros nem dispara envios |
 | `faq_entries` | administração editorial futura | pergunta e resposta administrativas, estado de publicação e revisão | não deve conter orientação clínica individual |
 
@@ -50,6 +50,8 @@ schema `reporting`, não às tabelas operacionais em `public`.
 2. `002_reporting_views.sql` cria a camada agregada para BI.
 3. `003_conversation_catalog.sql` acrescenta o contexto de conversa e os
    catálogos operacionais de templates e FAQ.
+4. `004_message_delivery_status.sql` registra o instante da última atualização
+   de entrega sem reter preço ou payload de relatório.
 
 As migrações são aplicadas pelo administrador do Neon, em ordem, com uma
 conexão SSL. Elas não criam uma conta, banco externo, usuário ou senha.

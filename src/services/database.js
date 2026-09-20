@@ -105,6 +105,36 @@ function createDatabase({ connectionString, pool } = {}) {
     return insertMessageWith(resolvedPool, message);
   }
 
+  async function recordDeliveryStatus({
+    infobipMessageId,
+    status,
+    errorCode = null,
+    statusUpdatedAt = null,
+  }) {
+    if (!infobipMessageId) {
+      throw new TypeError('infobipMessageId is required.');
+    }
+
+    if (!status) {
+      throw new TypeError('status is required.');
+    }
+
+    const result = await resolvedPool.query({
+      text: `
+        update messages
+        set
+          status = $2,
+          error_code = $3,
+          status_updated_at = coalesce($4, now())
+        where infobip_message_id = $1
+        returning id, infobip_message_id, status, error_code, status_updated_at
+      `,
+      values: [infobipMessageId, status, errorCode, statusUpdatedAt],
+    });
+
+    return result.rows[0] ?? null;
+  }
+
   async function ping() {
     await resolvedPool.query('select 1');
   }
@@ -115,7 +145,14 @@ function createDatabase({ connectionString, pool } = {}) {
         select
           to_regclass('public.contacts') is not null as contacts_exists,
           to_regclass('public.messages') is not null as messages_exists,
-          to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists
+          to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists,
+          exists (
+            select 1
+            from information_schema.columns
+            where table_schema = 'public'
+              and table_name = 'messages'
+              and column_name = 'status_updated_at'
+          ) as delivery_status_column_exists
       `,
     });
     const schema = result.rows[0];
@@ -123,7 +160,8 @@ function createDatabase({ connectionString, pool } = {}) {
     if (
       schema?.contacts_exists !== true ||
       schema?.messages_exists !== true ||
-      schema?.reporting_view_exists !== true
+      schema?.reporting_view_exists !== true ||
+      schema?.delivery_status_column_exists !== true
     ) {
       throw new Error('ChatManager database schema is incomplete.');
     }
@@ -147,7 +185,14 @@ function createDatabase({ connectionString, pool } = {}) {
     }
   }
 
-  return { insertMessage, persistWebhookMessage, ping, upsertContact, verifySchema };
+  return {
+    insertMessage,
+    persistWebhookMessage,
+    ping,
+    recordDeliveryStatus,
+    upsertContact,
+    verifySchema,
+  };
 }
 
 export { createDatabase };

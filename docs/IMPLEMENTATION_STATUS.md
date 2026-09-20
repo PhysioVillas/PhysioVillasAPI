@@ -32,6 +32,14 @@ Ele não exercita o código deste repositório, nem valida o contrato da Message
 API definido para produção, o webhook, deploy, banco de dados, persistência ou
 recepção de eventos.
 
+Em 2026-09-20, o receptor local passou também a reconhecer relatórios de
+entrega documentados da Infobip. Ele associa `messageId`, estado, erro e
+`doneAt` à mensagem já conhecida, sem guardar preço, destinatário, contato ou
+payload bruto. A migração `004_message_delivery_status.sql` registra somente o
+instante da atualização, e `/health/ready` exige essa migração antes de declarar
+o banco pronto. Ainda falta habilitar uma URL pública com token, assinar
+o evento no tenant e comparar o primeiro payload real antes de ativar o webhook.
+
 Uma validação sem envio da Messages API foi tentada após a resposta do usuário
 abrir a janela de 24 horas. A chave anterior respondeu HTTP 403; em 2026-09-19
 foi criada uma chave de escopo mínimo `messages-api:message:send` e a validação

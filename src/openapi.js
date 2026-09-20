@@ -25,10 +25,10 @@ const openApiDocument = {
     },
     '/webhooks/infobip/inbound': {
       post: {
-        summary: 'Recebe evento de mensagem WhatsApp da Infobip',
+        summary: 'Recebe evento WhatsApp de entrada ou relatório de entrega da Infobip',
         security: [{ InfobipWebhookBearer: [] }],
         responses: {
-          200: { description: 'Evento de entrada persistido' },
+          200: { description: 'Evento mapeado persistido; relatórios atualizam apenas status, erro e instante de entrega' },
           202: { description: 'Evento não mapeado reconhecido sem persistência' },
           401: { description: 'Token de webhook inválido' },
           503: { description: 'Webhook ainda não configurado' },

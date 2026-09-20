@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { hasExpectedBearerToken } from '../middleware/bearerToken.js';
-import { normalizeInfobipInboundPayload } from '../services/infobipWebhookNormalizer.js';
+import { normalizeInfobipWebhookPayload } from '../services/infobipWebhookNormalizer.js';
 
 function createInfobipWebhooksRouter({ database, webhookToken } = {}) {
   const router = Router();
@@ -25,14 +25,20 @@ function createInfobipWebhooksRouter({ database, webhookToken } = {}) {
     }
 
     try {
-      const { messages, ignored } = normalizeInfobipInboundPayload(request.body);
+      const { inboundMessages, deliveryReports, ignored } = normalizeInfobipWebhookPayload(request.body);
 
-      for (const normalized of messages) {
+      for (const normalized of inboundMessages) {
         await database.persistWebhookMessage(normalized);
       }
 
-      return response.status(messages.length > 0 ? 200 : 202).json({
-        accepted: messages.length,
+      for (const report of deliveryReports) {
+        await database.recordDeliveryStatus(report);
+      }
+
+      const accepted = inboundMessages.length + deliveryReports.length;
+
+      return response.status(accepted > 0 ? 200 : 202).json({
+        accepted,
         ignored,
       });
     } catch (error) {

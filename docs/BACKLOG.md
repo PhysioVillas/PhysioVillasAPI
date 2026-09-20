@@ -238,6 +238,9 @@ Neon e o deploy do backend.)*
 - [x] Upsert de contato + insert idempotente de mensagem (por `infobip_message_id`)
       implementados localmente de forma atômica; aguardam banco Neon e parser
       do payload real para uso em webhook
+- [x] Relatório de entrega documentado (`results[].messageId`, `status.name`,
+      `doneAt` e erro) é normalizado localmente e atualiza somente status, erro
+      e instante de entrega; preço e payload bruto não são persistidos
 - [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
       gravando com `direction: 'out'`, `sent_via: 'business_app'`
 - [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em
@@ -249,7 +252,8 @@ Neon e o deploy do backend.)*
       retorna contrato seguro `400`
 - [x] Receptor fica indisponível (`503`) até receber banco e token de webhook;
       token Bearer inválido retorna `401` antes de qualquer persistência
-- [ ] Bloco `@openapi` documentado
+- [x] Especificação OpenAPI descreve os eventos mapeados, respostas seguras e
+      pré-requisitos de configuração
 
 - **Depende de:** SET-06, API-01, SET-04, SET-05
 

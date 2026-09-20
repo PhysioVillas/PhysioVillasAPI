@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApp } from '../src/app.js';
+import { normalizeInfobipWebhookPayload } from '../src/services/infobipWebhookNormalizer.js';
 
 async function withServer(app, callback) {
   const server = app.listen(0);
@@ -25,6 +26,17 @@ function inboundPayload(overrides = {}) {
     }],
   };
 }
+
+test('webhook normalization does not double-count a result with both known shapes', () => {
+  const normalized = normalizeInfobipWebhookPayload(inboundPayload({
+    doneAt: '2026-09-20T14:00:00.000+0000',
+    status: { name: 'DELIVERED_TO_HANDSET' },
+  }));
+
+  assert.equal(normalized.inboundMessages.length, 1);
+  assert.equal(normalized.deliveryReports.length, 1);
+  assert.equal(normalized.ignored, 0);
+});
 
 test('inbound webhook remains unavailable until both persistence and an authorization token are configured', async () => {
   await withServer(createApp(), async (baseUrl) => {
@@ -124,6 +136,46 @@ test('inbound webhook acknowledges unsupported events without storing their raw 
   });
 
   assert.equal(calls.length, 0);
+});
+
+test('inbound webhook records a documented delivery update without retaining its raw payload', async () => {
+  const calls = [];
+  const app = createApp({
+    database: {
+      persistWebhookMessage: async () => undefined,
+      recordDeliveryStatus: async (report) => calls.push(report),
+    },
+    infobipWebhookToken: 'receiver-token',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer receiver-token',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        results: [{
+          messageId: 'infobip-outbound-1',
+          doneAt: '2026-09-20T14:00:00.000+0000',
+          status: { groupName: 'DELIVERED', name: 'DELIVERED_TO_HANDSET' },
+          error: { name: 'NO_ERROR' },
+          price: { pricePerMessage: 1, currency: 'EUR' },
+        }],
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { accepted: 1, ignored: 0 });
+  });
+
+  assert.deepEqual(calls, [{
+    infobipMessageId: 'infobip-outbound-1',
+    status: 'delivered_to_handset',
+    errorCode: 'NO_ERROR',
+    statusUpdatedAt: '2026-09-20T14:00:00.000+0000',
+  }]);
 });
 
 test('inbound webhook reports malformed JSON without exposing parser details', async () => {
