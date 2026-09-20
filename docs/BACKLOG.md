@@ -134,15 +134,16 @@ em `AT2`, já que depende do backend existir.)*
 - **Depende de:** SET-01, SET-02, SET-03
 - **Bloqueia:** API-03 (formato de template no envio)
 
-### DOC-01 — Documentar regras de integração da Infobip (`docs/INFOBIP_RULES.md`) — ⬜ 0%
+### DOC-01 — Documentar regras de integração da Infobip (`docs/INFOBIP_RULES.md`) — 🔄 Em andamento
 
 > **Evidência em 2026-09-18:** `docs/INFOBIP_RULES.md` registra o primeiro
 > template sandbox aceito e recebido. Os contratos da Messages API, payloads e
 > segurança do webhook continuam como lacunas técnicas; os estados históricos
 > de `SET-01` a `SET-04` permanecem preservados.
 
-- [ ] Documenta os achados de `SET-01`, `SET-04`, `SET-05`, no mesmo espírito
-      do antigo `META_CLOUD_API_RULES.md`
+- [x] Documenta os achados de `SET-01`, `SET-04`, `SET-05`, no mesmo espírito
+      do antigo `META_CLOUD_API_RULES.md`, separando sandbox, contrato público
+      e contrato real do tenant
 - [ ] Payload real de webhook de mensagem recebida
 - [ ] Payload de atualização de status (`DELIVERED`/`READ`/`FAILED`)
 - [ ] Formato do identificador do remetente (`wa_id`/número: com ou sem `+`,
@@ -151,8 +152,8 @@ em `AT2`, já que depende do backend existir.)*
 - [ ] Mecanismo de segurança do webhook (assinatura, IP allowlist, Basic Auth,
       ou nenhum)
 - [ ] Como a Infobip sinaliza erro de janela de 24h
-- [ ] Cada regra marcada como confirmada (com link pro código, quando
-      aplicável) ou pendente
+- [x] Cada regra está marcada como confirmada, documental, local ou pendente,
+      com vínculo para a implementação quando aplicável
 
 - **Depende de:** SET-01, SET-04, SET-05
 

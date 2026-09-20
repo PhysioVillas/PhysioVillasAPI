@@ -118,6 +118,19 @@ Isso elimina a incerteza documental de formato, mas não prova a existência de
 um template PhysioVilas aprovado, a resposta de envio do tenant ou a entrega.
 Nenhum template foi criado, validado com dados reais ou enviado nesta revisão.
 
+## Matriz de rastreabilidade
+
+| Regra | Estado | Evidência e implementação |
+| --- | --- | --- |
+| Template sandbox do trial | Confirmado somente no sandbox | Recebimento confirmado em 2026-09-18; não equivale ao contrato comercial da Messages API. |
+| Template WhatsApp pela Messages API | Confirmado documentalmente | `src/services/infobipMessagesClient.js` constrói `content.body` numerado e `test/infobipMessagesClient.test.js` cobre o contrato atual. |
+| Validação sem envio | Confirmado no tenant | `POST /messages-api/1/messages/validate` aceitou o contrato em 2026-09-19; `src/routes/messages.js` não expõe rota de disparo. |
+| Relatórios de entrega | Confirmado documentalmente e protegido localmente | `src/services/infobipWebhookNormalizer.js` mapeia `messageId`, `doneAt`, status e erro; `src/services/database.js` ignora atualização fora de ordem. |
+| Inbound comercial e formato do `wa_id` | Pendente | Requer payload real do remetente/WABA da clínica; o parser preserva `from` sem normalização até essa evidência. |
+| Segurança de subscription/webhook | Pendente | A rota exige Bearer interno em `src/routes/infobipWebhooks.js`; o mecanismo aceito pela subscription real ainda precisa ser confirmado. |
+| Coexistência e ecos do Business App | Pendente | Não há payload público reproduzível para `smb_message_echoes`; não tratar suposições como contrato. |
+| Falha de janela de 24 horas e limite WhatsApp de `sendAt` | Pendente | Exigem resposta real controlada; a validação local só garante formato ISO futuro. |
+
 ## Pendências antes de implementar a integração
 
 - Confirmar resposta, `messageId` por destino e erros da Messages API.
