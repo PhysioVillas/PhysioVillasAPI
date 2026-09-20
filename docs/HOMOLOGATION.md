@@ -3,8 +3,11 @@
 **Estado em 2026-09-20:** o projeto `chatmanager-homolog` foi criado no
 console Neon no plano Free, na região São Paulo e somente com Postgres ativo.
 O schema operacional e a visão de métricas foram aplicados e verificados no
-database padrão. Não há projeto Vercel conectado, domínio, credencial Infobip
-ou envio de WhatsApp configurado.
+database padrão. Um projeto Vercel separado recebeu uma primeira publicação de
+teste, sem domínio próprio, banco configurado, credencial Infobip ou envio de
+WhatsApp. A Vercel classifica a primeira publicação de um projeto novo como
+`production` por mecânica da plataforma; ela é somente o ambiente isolado de
+homologação e não substitui a produção futura.
 
 ## Limite do ambiente de teste
 
@@ -32,6 +35,12 @@ banco ou Infobip. Isso confirma que uma primeira publicação não envia
 mensagens por acidente e só fica pronta para webhook após configurar o banco e
 o token correspondente.
 
+A publicação isolada na Vercel foi validada em 2026-09-20 com o mesmo
+resultado: `GET /health` retornou `200`, `GET /docs.json` retornou a
+especificação OpenAPI e `GET /health/ready` retornou `503` com
+`database: not_configured`. Um `POST /messages/validate` retornou `503` por
+falta de configuração, portanto não houve chamada à Infobip nem envio.
+
 ## Sequência de provisionamento
 
 1. As migrations `001_initial_schema.sql` e `002_reporting_views.sql` foram
@@ -41,12 +50,16 @@ o token correspondente.
    ambiente, `npm run migrate` continua sendo o caminho reprodutível: ele
    reaplica operações idempotentes, registra checksums e não é disparado no
    deploy.
-2. Configurar somente `DATABASE_URL` como segredo de **Preview** no projeto
+2. Aplicar também as migrations `003_conversation_catalog.sql` e
+   `004_message_delivery_status.sql` antes de configurar o banco no deploy. A
+   checagem `/health/ready` exige a coluna de atualização de entrega e falha de
+   forma segura até o schema estar completo.
+3. Configurar somente `DATABASE_URL` como segredo de **Preview** no projeto
    Vercel. A URL não deve ser salva em arquivo versionado ou em documentação.
-3. Criar uma publicação de preview da revisão atual, sem domínio e sem
+4. Criar uma publicação de preview da revisão atual, sem domínio e sem
    promoção para produção. O projeto Express já exporta `src/app.js` como
    aplicação padrão compatível com uma Vercel Function.
-4. Validar `GET /health`, `/docs` e `/docs.json`. Validar ainda que as duas
+5. Validar `GET /health`, `/docs` e `/docs.json`. Validar ainda que as duas
    superfícies com efeito externo continuam desativadas (`503`) antes de
    integrar Infobip.
 

@@ -177,3 +177,13 @@ em memória ou abrir conexão externa na inicialização.
 
 Após essas entregas, `npm test` passou com **45 testes** e `npm run check`
 concluiu sem erro.
+
+## Preview Vercel isolado
+
+Em 2026-09-20, o backend foi publicado em um projeto Vercel de homologação
+separado, sem domínio próprio, `DATABASE_URL`, credenciais Infobip ou token
+interno. A plataforma respondeu `200` para `/health` e `/docs.json`; por outro
+lado, `/health/ready` e `/messages/validate` responderam `503`, o que comprova
+que persistência e mensageria continuam desativadas nesse ambiente. A primeira
+publicação de um projeto novo aparece como `production` na Vercel, mas não é a
+produção do produto e não tem qualquer integração externa habilitada.
