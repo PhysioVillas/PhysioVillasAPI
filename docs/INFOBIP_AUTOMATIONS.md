@@ -28,6 +28,13 @@ submetido, enviado ou agendado. O próximo desbloqueio técnico é vincular um
 remetente/WABA elegível para templates; não cadastrar outro remetente sem
 decisão operacional da clínica.
 
+Em 2026-09-20, a aba **Fluxos** do portal mostrou 34 fluxos existentes sob o
+WABA compartilhado `Infobip` e informou que criar ou duplicar um fluxo exige o
+Gerenciador do WhatsApp. Não foi criado nem alterado qualquer fluxo desse WABA
+compartilhado. Assim, o rascunho PhysioVilas só deve ser criado depois que o
+WABA/remetente da clínica estiver conectado e o acesso correspondente estiver
+disponível; isso evita alterar recursos de demonstração de terceiros.
+
 ## AUT-01 — modelos a cadastrar
 
 | Nome sugerido | Categoria | Idioma | Variáveis | Finalidade |

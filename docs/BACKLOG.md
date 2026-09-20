@@ -347,6 +347,9 @@ separada `/messages/schedule`.
 
 - [x] Fluxo, limites de atendimento humano e critérios de aceite versionados
       em `docs/INFOBIP_AUTOMATIONS.md`
+- [x] Área de Fluxos revisada: ela expõe somente fluxos do WABA compartilhado
+      `Infobip` e direciona criação/duplicação ao Gerenciador do WhatsApp; não
+      foi alterado recurso de demonstração de terceiros
 - [ ] Menu de triagem configurado na plataforma Infobip
 - [ ] Testado ponta a ponta com número real
 
@@ -356,6 +359,8 @@ separada `/messages/schedule`.
 
 - [x] Escopo seguro do FAQ e regras de encaminhamento humano versionados em
       `docs/INFOBIP_AUTOMATIONS.md`
+- [x] Bloqueio do rascunho na plataforma registrado: falta WABA/remetente da
+      clínica e acesso ao Gerenciador do WhatsApp para criar o fluxo próprio
 - [ ] Fluxo de FAQ configurado na plataforma Infobip
 - [ ] Testado ponta a ponta com número real
 
