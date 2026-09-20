@@ -131,3 +131,23 @@ como bloqueio, sem criar um sender adicional.
 do trial. Payloads, segurança do webhook e contratos de template permanecem
 pendentes para a implementação. Essas lacunas não invalidam os estados
 históricos de `SET-01` a `SET-04`, preservados em `docs/BACKLOG.md`.
+
+## Sprint 3 — entregas antecipadas locais
+
+Em 2026-09-20, a migração `003_conversation_catalog.sql` modelou o contexto
+operacional de conversas, o catálogo de templates e a base editorial de FAQ.
+Ela mantém o vínculo opcional das mensagens à conversa, índices para consulta e
+regras de integridade para estado, intenção e publicação. Dados clínicos,
+agenda, payloads brutos e parâmetros preenchidos por pacientes continuam fora
+do modelo. A migração está versionada e pronta para aplicação controlada no
+Neon, mas ainda não foi aplicada no ambiente externo nesta etapa.
+
+Também foi definida uma política executável de acesso por perfil. O perfil
+operacional é o único com leitura de contatos e mensagens identificáveis;
+gestão e diretoria recebem somente acesso à camada agregada de relatórios. A
+política falha fechada para permissões desconhecidas e não cria usuários,
+logins ou permissões externas. A escolha do provedor de identidade e a
+aplicação da política como middleware serão feitas antes de expor rotas humanas.
+
+Após essas entregas, `npm test` passou com **43 testes** e `npm run check`
+concluiu sem erro.
