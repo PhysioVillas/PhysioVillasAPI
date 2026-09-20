@@ -198,7 +198,8 @@ Renumerado aqui para `SET-06` para evitar ambiguidade. Cobre o schema no
 Neon e o deploy do backend.)*
 
 - [x] Banco Neon `chatmanager-homolog` criado no plano Free, região São Paulo
-      e somente com Postgres; projeto Vercel ainda pendente
+      e somente com Postgres; preview Vercel isolado criado sem banco, Infobip
+      ou domínio próprio
 - [x] `DATABASE_URL` com `sslmode=require` documentada em `.env.example`
 - [ ] Comportamento de auto-suspend do free tier confirmado (latência após inatividade)
 - [x] Tabela `contacts` (`wa_id`, `profile_name`, `last_message_at`) definida na
@@ -222,10 +223,12 @@ Neon e o deploy do backend.)*
 - [ ] Role `powerbi_reader` criado, somente leitura (`grant select` +
       `default privileges` para tabelas futuras)
 - [x] Backend Express exporta a aplicação como default para ser detectado como
-      Vercel Function (sem Next.js); ainda não foi implantado
+      Vercel Function (sem Next.js); preview externo responde `/health` e
+      `/docs.json`, enquanto banco e mensageria retornam `503` sem configuração
 - [x] `GET /health/ready` diferencia banco não configurado, indisponível e
       schema pronto sem expor URL ou detalhes de erro
-- [ ] Variáveis de ambiente configuradas em Production e Preview
+- [ ] `DATABASE_URL` configurada somente como segredo de Preview; credenciais
+      de produção e Infobip continuam deliberadamente ausentes
 - [ ] Deploy automático a cada push na `main`
 
 - **Depende de:** SET-01, DOC-01 (formato do `wa_id`)

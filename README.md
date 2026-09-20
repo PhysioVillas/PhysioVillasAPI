@@ -27,7 +27,8 @@ da Messages API; o schema PostgreSQL está versionado e foi aplicado no Neon de
 homologação.
 
 `GET /health/ready` só retorna sucesso quando o banco configurado contém
-`contacts`, `messages` e `reporting.daily_message_metrics`; ele não mostra
+`contacts`, `messages`, `reporting.daily_message_metrics` e a coluna de
+atualização de entrega; ele não mostra
 detalhes de conexão quando a verificação falha.
 O receptor local de webhook normaliza eventos de entrada conhecidos e permanece
 desligado até banco e token de webhook serem configurados.
@@ -44,10 +45,10 @@ O ticket permanece em andamento porque a Definição de Pronto exige OpenAPI em
 `API-03`. O detalhamento e as evidências disponíveis estão em
 [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
 
-O app Express pode ser detectado como uma única Vercel Function sem
-configuração adicional. A primeira publicação será um preview isolado: recebe
-apenas `DATABASE_URL` do Neon e mantém as integrações Infobip desligadas. Veja
-a sequência e os limites em [`docs/HOMOLOGATION.md`](docs/HOMOLOGATION.md) e a
+O app Express já foi publicado em preview isolado na Vercel, sem banco,
+credenciais Infobip ou domínio próprio. A próxima publicação de homologação só
+receberá `DATABASE_URL` do Neon; as integrações Infobip permanecem desligadas.
+Veja a sequência e os limites em [`docs/HOMOLOGATION.md`](docs/HOMOLOGATION.md) e a
 [documentação da Vercel para Express](https://vercel.com/docs/frameworks/backend/express).
 
 ## Arquitetura (planejada)
