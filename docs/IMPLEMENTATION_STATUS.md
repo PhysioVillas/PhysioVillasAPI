@@ -6,7 +6,7 @@
 
 O corte técnico local está concluído: há scaffold Node.js com Express em ESM e
 `GET /health`. O registro de validação local informa sucesso para `npm run
-check` e `npm test`, com 55/55 testes passando em 2026-09-20.
+check` e `npm test`, com 56/56 testes passando em 2026-09-20.
 
 A documentação interativa está disponível em `/docs`, com a especificação
 OpenAPI 3.1 em `/docs.json`. Ela cobre as rotas existentes, incluindo as
@@ -186,7 +186,7 @@ variável, a API permanece sem banco e sem cliente Infobip. Isso torna a
 transição para persistência real verificável em teste, sem introduzir um store
 em memória ou abrir conexão externa na inicialização.
 
-Após essas entregas, `npm test` passou com **55 testes** e `npm run check`
+Após essas entregas, `npm test` passou com **56 testes** e `npm run check`
 concluiu sem erro.
 
 ## Preview Vercel isolado

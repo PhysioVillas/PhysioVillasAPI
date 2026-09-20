@@ -311,7 +311,7 @@ separada `/messages/schedule`.
 
 - **Depende de:** API-03
 
-### API-05 — Documentação interativa das APIs (Swagger) — 🔄 Em andamento
+### API-05 — Documentação interativa das APIs (Swagger) — ✅ 100%
 
 - [x] Swagger UI servido em `/docs`, spec OpenAPI 3.1 em `/docs.json`
 - [x] Rotas locais atuais (`/health`, webhook de entrada e validação sem envio)
@@ -321,6 +321,10 @@ separada `/messages/schedule`.
 - [x] `info.description` explica que `wa_id` preserva o valor de `from` sem
       normalização e registra que o formato comercial final depende de payload
       real (`DOC-01`)
+
+**Evidência:** OpenAPI cobre as cinco superfícies HTTP locais e os dois
+formatos de webhook mapeados; teste de contrato passou em 2026-09-20 sem
+chamar a Infobip.
 
 - **Depende de:** API-02, API-03
 
