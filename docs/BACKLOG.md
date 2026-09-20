@@ -117,9 +117,9 @@ em `AT2`, já que depende do backend existir.)*
       real: sandbox da API WhatsApp dedicada aceito com HTTP 200 e recebido no
       número verificado do trial em 2026-09-18. Isso não confirma o payload da
       Messages API adotada para produção.
-- [ ] Formato exato de `content` para envio de **template** via Messages API
-      confirmado (pesquisa prévia encontrou exemplos inconsistentes, nenhum
-      confirmado)
+- [x] Formato de `content` para template via Messages API confirmado na
+      referência oficial atual: `body.type: TEXT`, parâmetros numéricos,
+      `templateName` e `language`; coberto por teste local sem envio
 - [x] Chave com o escopo `messages-api:message:send` criada e usada somente em
       `POST /messages-api/1/messages/validate`: HTTP 200 em 2026-09-19, sem
       enviar mensagem. A chave anterior respondeu HTTP 403 em 2026-09-18.
@@ -128,7 +128,8 @@ em `AT2`, já que depende do backend existir.)*
       para idempotência em `DB-01`)
 - [ ] Confirmado formato de erro da Messages API (número inválido, fora da
       janela de 24h, template rejeitado)
-- [ ] Achados incorporados em `docs/INFOBIP_RULES.md`
+- [x] Achados documentais de templates e relatórios incorporados em
+      `docs/INFOBIP_RULES.md`; ainda não substituem o teste real do tenant
 
 - **Depende de:** SET-01, SET-02, SET-03
 - **Bloqueia:** API-03 (formato de template no envio)

@@ -113,7 +113,7 @@ test('schedule validation refuses a time in the past before any Infobip request'
   );
 });
 
-test('template validation uses the validation endpoint and maps parameters by placeholder order', async () => {
+test('template validation matches the documented Messages API contract and maps parameters by placeholder order', async () => {
   const calls = [];
   const client = createInfobipMessagesClient({
     ...credentials,

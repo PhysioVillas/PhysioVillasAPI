@@ -104,9 +104,22 @@ Fontes oficiais: [Messages API — envio e webhooks por mensagem](https://www.in
 [exemplo de relatório de entrega WhatsApp](https://www.infobip.com/docs/whatsapp/manage-integration/usernames-and-user-ids)
 e [eventos disponíveis em subscriptions](https://www.infobip.com/docs/subscriptions/available-events).
 
+## Contrato público de templates da Messages API — conferido em 2026-09-20
+
+O exemplo atual da [referência de tipos de mensagem](https://www.infobip.com/docs/messages-api/message-types)
+para template WhatsApp confirma o contrato usado pelo backend: `channel` igual
+a `WHATSAPP`, `sender`, `destinations[].to`, `template.templateName`,
+`template.language` e `content.body` com `type: "TEXT"` e parâmetros nas
+posições numéricas `1`, `2` e assim por diante. O teste local compara o payload
+inteiro com esse formato e a rota continua apontando somente para
+`/messages-api/1/messages/validate`.
+
+Isso elimina a incerteza documental de formato, mas não prova a existência de
+um template PhysioVilas aprovado, a resposta de envio do tenant ou a entrega.
+Nenhum template foi criado, validado com dados reais ou enviado nesta revisão.
+
 ## Pendências antes de implementar a integração
 
-- Confirmar o formato de `content` para template na Messages API.
 - Confirmar resposta, `messageId` por destino e erros da Messages API.
 - Capturar payloads reais de inbound, status e coexistência.
 - Confirmar a autenticação do webhook e o formato de falha da janela de 24h.
