@@ -149,5 +149,11 @@ política falha fechada para permissões desconhecidas e não cria usuários,
 logins ou permissões externas. A escolha do provedor de identidade e a
 aplicação da política como middleware serão feitas antes de expor rotas humanas.
 
-Após essas entregas, `npm test` passou com **43 testes** e `npm run check`
+O bootstrap da aplicação também foi isolado em `src/bootstrap.js`. Com
+`DATABASE_URL`, ele cria exclusivamente o adaptador PostgreSQL; sem essa
+variável, a API permanece sem banco e sem cliente Infobip. Isso torna a
+transição para persistência real verificável em teste, sem introduzir um store
+em memória ou abrir conexão externa na inicialização.
+
+Após essas entregas, `npm test` passou com **45 testes** e `npm run check`
 concluiu sem erro.
