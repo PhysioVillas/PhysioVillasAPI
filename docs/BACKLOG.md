@@ -220,6 +220,9 @@ Neon e o deploy do backend.)*
       de leitura (`contacts`, `messages` e `reporting.daily_message_metrics`)
 - [x] Contrato de leitura do Power BI corrigido para acesso somente ao schema
       `reporting`; mapa de módulos e retenção pendente em `db/DATA_MODEL.md`
+- [x] Script revisado e testado para provisionar o leitor de Power BI somente
+      no schema `reporting`, revogando acesso ao `public`; não cria login nem
+      registra senha e aguarda execução administrativa autorizada
 - [ ] Role `powerbi_reader` criado, somente leitura (`grant select` +
       `default privileges` para tabelas futuras)
 - [x] Backend Express exporta a aplicação como default para ser detectado como

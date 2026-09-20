@@ -28,15 +28,15 @@ BI e conceder somente leitura no schema `reporting`. Não conceder acesso de BI
 ao schema operacional `public`:
 
 ```sql
-create role powerbi_reader with login password '<senha-gerada-fora-do-repo>';
-grant connect on database <nome_do_banco> to powerbi_reader;
-grant usage on schema reporting to powerbi_reader;
-grant select on all tables in schema reporting to powerbi_reader;
-alter default privileges in schema reporting grant select on tables to powerbi_reader;
+-- Criar a role com senha gerada fora do repositório, em operação administrativa.
+-- Em seguida, executar db/provisioning/powerbi_reader.sql como proprietário do schema.
 ```
 
-O comando precisa ser executado pelo administrador do banco e a senha deve ser
-guardada exclusivamente no gerenciador de segredos que for adotado.
+O arquivo `provisioning/powerbi_reader.sql` contém os grants e revogações
+mínimos: remove qualquer acesso ao módulo `public` e permite apenas leitura do
+schema `reporting`, inclusive para objetos futuros. A role de login e sua senha
+devem ser criadas pelo administrador fora do repositório e em operação
+explicitamente autorizada.
 
 O mapa de módulos, limites de dados e extensões planejadas está em
 [`DATA_MODEL.md`](DATA_MODEL.md).
