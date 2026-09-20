@@ -8,8 +8,8 @@ async function getReadiness({ database } = {}) {
   }
 
   try {
-    await database.ping();
-    return { status: 'ready', database: 'connected' };
+    await database.verifySchema();
+    return { status: 'ready', database: 'schema_ready' };
   } catch {
     return { status: 'not_ready', database: 'unavailable' };
   }

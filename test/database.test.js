@@ -90,6 +90,44 @@ test('ping verifies PostgreSQL connectivity without reading operational data', a
   assert.deepEqual(pool.calls, ['select 1']);
 });
 
+test('verifySchema requires the operational tables and reporting view', async () => {
+  const pool = {
+    calls: [],
+    query: async (query) => {
+      pool.calls.push(query);
+      return {
+        rows: [{
+          contacts_exists: true,
+          messages_exists: true,
+          reporting_view_exists: true,
+        }],
+      };
+    },
+  };
+  const database = createDatabase({ pool });
+
+  await database.verifySchema();
+
+  assert.match(pool.calls[0].text, /to_regclass\('public\.contacts'\)/i);
+  assert.match(pool.calls[0].text, /reporting\.daily_message_metrics/i);
+});
+
+test('verifySchema rejects an incomplete database before webhooks are accepted', async () => {
+  const database = createDatabase({
+    pool: {
+      query: async () => ({
+        rows: [{
+          contacts_exists: true,
+          messages_exists: false,
+          reporting_view_exists: true,
+        }],
+      }),
+    },
+  });
+
+  await assert.rejects(database.verifySchema(), /database schema is incomplete/);
+});
+
 test('persistWebhookMessage atomically saves a normalized webhook message', async () => {
   const calls = [];
   const client = {

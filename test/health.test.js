@@ -43,9 +43,9 @@ test('GET /health/ready keeps the API unavailable for webhooks without a databas
   });
 });
 
-test('GET /health/ready confirms database connectivity without exposing connection details', async () => {
+test('GET /health/ready confirms the required database schema without exposing connection details', async () => {
   const appWithDatabase = createApp({
-    database: { ping: async () => undefined },
+    database: { verifySchema: async () => undefined },
   });
 
   await withServer(appWithDatabase, async (baseUrl) => {
@@ -54,14 +54,14 @@ test('GET /health/ready confirms database connectivity without exposing connecti
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
       status: 'ready',
-      database: 'connected',
+      database: 'schema_ready',
     });
   });
 });
 
 test('GET /health/ready hides a database failure behind a stable response', async () => {
   const appWithUnavailableDatabase = createApp({
-    database: { ping: async () => { throw new Error('connection string leaked'); } },
+    database: { verifySchema: async () => { throw new Error('connection string leaked'); } },
   });
 
   await withServer(appWithUnavailableDatabase, async (baseUrl) => {

@@ -109,6 +109,26 @@ function createDatabase({ connectionString, pool } = {}) {
     await resolvedPool.query('select 1');
   }
 
+  async function verifySchema() {
+    const result = await resolvedPool.query({
+      text: `
+        select
+          to_regclass('public.contacts') is not null as contacts_exists,
+          to_regclass('public.messages') is not null as messages_exists,
+          to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists
+      `,
+    });
+    const schema = result.rows[0];
+
+    if (
+      schema?.contacts_exists !== true ||
+      schema?.messages_exists !== true ||
+      schema?.reporting_view_exists !== true
+    ) {
+      throw new Error('ChatManager database schema is incomplete.');
+    }
+  }
+
   async function persistWebhookMessage({ contact, message }) {
     const client = await resolvedPool.connect();
 
@@ -127,7 +147,7 @@ function createDatabase({ connectionString, pool } = {}) {
     }
   }
 
-  return { insertMessage, persistWebhookMessage, ping, upsertContact };
+  return { insertMessage, persistWebhookMessage, ping, upsertContact, verifySchema };
 }
 
 export { createDatabase };

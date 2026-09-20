@@ -14,6 +14,8 @@ na inicialização da API ou no deploy.
 
 Alternativamente, execute no console SQL do Neon, nesta ordem,
 `migrations/001_initial_schema.sql` e `migrations/002_reporting_views.sql`.
+Depois, `GET /health/ready` deve confirmar que as duas tabelas operacionais e
+a visão analítica estão presentes antes de liberar o webhook em um preview.
 
 Não registre a URL de conexão, usuários, senhas, números de telefone ou chaves
 de API neste repositório.

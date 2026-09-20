@@ -16,7 +16,7 @@ const openApiDocument = {
     },
     '/health/ready': {
       get: {
-        summary: 'Confirma que o banco configurado está acessível',
+        summary: 'Confirma que o banco configurado tem o schema do ChatManager',
         responses: {
           200: { description: 'Aplicação e banco prontos para receber webhooks' },
           503: { description: 'Banco ainda não configurado ou indisponível' },

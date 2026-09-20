@@ -25,6 +25,10 @@ Node.js/Express em ESM, com `GET /health`, `GET /health/ready` e export default
 compatível com Vercel. A integração segura contém apenas a validação sem envio
 da Messages API; o schema PostgreSQL está versionado e foi aplicado no Neon de
 homologação.
+
+`GET /health/ready` só retorna sucesso quando o banco configurado contém
+`contacts`, `messages` e `reporting.daily_message_metrics`; ele não mostra
+detalhes de conexão quando a verificação falha.
 O receptor local de webhook normaliza eventos de entrada conhecidos e permanece
 desligado até banco e token de webhook serem configurados.
 O endpoint interno de validação de mensagens permanece desligado até receber as

@@ -60,10 +60,10 @@ e inserção idempotente de mensagens, com um pool injetável para testes. Ele n
 abre conexão enquanto não for criado com uma `DATABASE_URL` válida, e nenhuma
 rota Express o chama antes de o banco ser provisionado.
 
-O endpoint `GET /health/ready` torna a conexão verificável no preview: sem
-banco retorna `503` com `not_configured`, com conexão saudável retorna `200`,
-e uma falha de banco volta `503` sem revelar URL, credenciais ou detalhes do
-driver.
+O endpoint `GET /health/ready` torna o schema verificável no preview: sem
+banco retorna `503` com `not_configured`; só retorna `200` se `contacts`,
+`messages` e `reporting.daily_message_metrics` existirem; e uma falha de banco
+volta `503` sem revelar URL, credenciais ou detalhes do driver.
 
 O comando manual `npm run migrate` aplica as migrations SQL em ordem, registra
 o checksum em `schema_migrations` e falha se uma migration já aplicada for

@@ -222,7 +222,7 @@ Neon e o deploy do backend.)*
 - [x] Backend Express exporta a aplicação como default para ser detectado como
       Vercel Function (sem Next.js); ainda não foi implantado
 - [x] `GET /health/ready` diferencia banco não configurado, indisponível e
-      conectado sem expor URL ou detalhes de erro
+      schema pronto sem expor URL ou detalhes de erro
 - [ ] Variáveis de ambiente configuradas em Production e Preview
 - [ ] Deploy automático a cada push na `main`
 
