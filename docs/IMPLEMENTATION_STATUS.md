@@ -203,3 +203,9 @@ Uma nova publicação de **Preview** foi validada depois das entregas de
 conversa e OpenAPI: `/health` respondeu `200`, `/health/ready` permaneceu em
 `503` por banco não configurado e `/docs.json` expôs a especificação 3.1.
 Nenhuma variável de banco ou Infobip foi adicionada à Vercel.
+
+O Preview foi atualizado uma vez mais após declarar a faixa suportada de Node
+como `>=20 <25`. O build de homologação concluiu sem a advertência anterior de
+runtime futuro automático; `/health` permaneceu em `200` e `/health/ready` em
+`503/not_configured`. Isso preserva o corte seguro: a Vercel prova a função,
+mas ainda não tem acesso ao banco nem capacidade de chamar a Infobip.

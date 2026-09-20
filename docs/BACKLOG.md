@@ -228,6 +228,9 @@ Neon e o deploy do backend.)*
 - [x] Preview atualizado após migrations de conversa e contrato OpenAPI;
       `/health` continua em `200` e `/health/ready` em `503` sem banco, sem
       Infobip e sem promoção para produção
+- [x] Runtime do preview limitado a Node `>=20 <25`; novo build de Preview
+      validado sem advertência de versão automática futura e com os mesmos
+      limites seguros (`/health` 200; `/health/ready` 503 sem banco)
 - [x] `GET /health/ready` diferencia banco não configurado, indisponível e
       schema pronto sem expor URL ou detalhes de erro
 - [ ] `DATABASE_URL` configurada somente como segredo de Preview; credenciais

@@ -48,6 +48,13 @@ continuou retornando `200`; `GET /health/ready` retornou somente
 sem credenciais. A publicação não foi promovida, não recebeu domínio, banco ou
 variáveis `INFOBIP_*`.
 
+Uma terceira validação de Preview, já com a faixa de runtime declarada como
+Node `>=20 <25`, manteve o mesmo resultado em 2026-09-20: build concluído sem
+advertência de versão automática do Node, `GET /health` em `200` e
+`GET /health/ready` em `503/not_configured`. O ambiente permanece isolado: não
+há `DATABASE_URL`, token interno, credenciais Infobip, domínio ou promoção para
+produção.
+
 ## Sequência de provisionamento
 
 1. As migrations `001_initial_schema.sql` a `005_active_conversations.sql`
