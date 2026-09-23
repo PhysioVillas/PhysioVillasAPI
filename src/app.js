@@ -1,7 +1,7 @@
 import express from 'express';
-import swaggerUi from 'swagger-ui-express';
 import { errorHandler, notFoundHandler } from './middleware/errorHandlers.js';
 import { openApiDocument } from './openapi.js';
+import { renderDocsHtml } from './routes/docsPage.js';
 import { createHealthRouter } from './routes/health.js';
 import { createInfobipWebhooksRouter } from './routes/infobipWebhooks.js';
 import { createMessagesRouter } from './routes/messages.js';
@@ -17,9 +17,9 @@ function createApp({
 
   app.use(express.json({ limit: '64kb' }));
   app.get('/docs.json', (_request, response) => response.json(openApiDocument));
-  app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, {
-    customSiteTitle: 'ChatManager API Docs',
-  }));
+  app.get('/docs', (_request, response) => {
+    response.type('html').send(renderDocsHtml());
+  });
   app.use('/health', createHealthRouter({ database }));
   app.use('/webhooks/infobip', createInfobipWebhooksRouter({
     database,
