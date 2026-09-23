@@ -122,6 +122,8 @@ test('OpenAPI documents the safe webhook and validation contracts', () => {
   const webhookResult = webhook.requestBody.content['application/json'].schema.properties.results;
   const textValidation = openApiDocument.paths['/messages/validate'].post;
   const templateValidation = openApiDocument.paths['/messages/templates/validate'].post;
+  const textSend = openApiDocument.paths['/messages/send'].post;
+  const templateSend = openApiDocument.paths['/messages/templates/send'].post;
 
   assert.equal(webhookResult.items.oneOf.length, 2);
   assert.match(webhookResult.description, /payload bruto não é armazenado/i);
@@ -129,4 +131,7 @@ test('OpenAPI documents the safe webhook and validation contracts', () => {
   assert.equal(textValidation.requestBody.content['application/json'].schema.properties.sendAt.format, 'date-time');
   assert.equal(templateValidation.requestBody.content['application/json'].schema.properties.sendAt.format, 'date-time');
   assert.ok(templateValidation.requestBody.content['application/json'].schema.properties.parameters);
+  assert.equal(textSend.requestBody.content['application/json'].schema.properties.sendAt.format, 'date-time');
+  assert.equal(templateSend.requestBody.content['application/json'].schema.properties.sendAt.format, 'date-time');
+  assert.match(textSend.description, /dispara uma mensagem externa/i);
 });

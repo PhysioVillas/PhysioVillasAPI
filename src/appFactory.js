@@ -27,6 +27,7 @@ function createApp({
   }));
   app.use('/messages', createMessagesRouter({
     client: messagesClient,
+    database,
     sender: whatsappSender,
     apiToken: chatManagerApiToken,
   }));
