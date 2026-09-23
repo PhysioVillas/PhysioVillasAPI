@@ -1,42 +1,12 @@
 import express from 'express';
-import { errorHandler, notFoundHandler } from './middleware/errorHandlers.js';
-import { openApiDocument } from './openapi.js';
-import { renderDocsHtml } from './routes/docsPage.js';
-import { createHealthRouter } from './routes/health.js';
-import { createInfobipWebhooksRouter } from './routes/infobipWebhooks.js';
-import { createMessagesRouter } from './routes/messages.js';
+import { createApp } from './appFactory.js';
+import { createRuntimeApp } from './bootstrap.js';
 
-function createApp({
-  database,
-  infobipWebhookToken,
-  messagesClient,
-  whatsappSender,
-  chatManagerApiToken,
-} = {}) {
-  const app = express();
-
-  app.use(express.json({ limit: '64kb' }));
-  app.get('/docs.json', (_request, response) => response.json(openApiDocument));
-  app.get('/docs', (_request, response) => {
-    response.type('html').send(renderDocsHtml());
-  });
-  app.use('/health', createHealthRouter({ database }));
-  app.use('/webhooks/infobip', createInfobipWebhooksRouter({
-    database,
-    webhookToken: infobipWebhookToken,
-  }));
-  app.use('/messages', createMessagesRouter({
-    client: messagesClient,
-    sender: whatsappSender,
-    apiToken: chatManagerApiToken,
-  }));
-  app.use(notFoundHandler);
-  app.use(errorHandler);
-
-  return app;
-}
-
-const app = createApp();
+// Vercel detects this default Express export as the function entrypoint.
+// Build it through the same environment-aware bootstrap used by src/index.js.
+const { app: runtimeApp } = createRuntimeApp();
+const app = express();
+app.use(runtimeApp);
 
 export { app, createApp };
 export default app;

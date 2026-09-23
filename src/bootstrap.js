@@ -1,5 +1,5 @@
-import { createApp } from './app.js';
 import { getRuntimeConfig, requireInfobipConfig } from './config/runtimeConfig.js';
+import { createApp } from './appFactory.js';
 import { createDatabase } from './services/database.js';
 import { createInfobipMessagesClient } from './services/infobipMessagesClient.js';
 
