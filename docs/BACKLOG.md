@@ -1,6 +1,6 @@
 # Backlog do Projeto — PhysioVilas ChatManager
 
-**Última atualização:** 2026-09-20
+**Última atualização:** 2026-09-24
 **Escopo deste documento:** reestruturação para **Infobip + Neon**, backend
 enxuto sem frontend, sem bot próprio, sem autenticação. Detalhamento técnico
 completo em `PRD_PhysioVilas_WhatsApp.md`.
@@ -49,6 +49,16 @@ antes de codar
 > `API-02` e `API-03`; essa incompatibilidade entre a Definition of Done e a
 > ordem de dependências precisa ser resolvida sem antecipar o escopo do
 > Swagger.
+
+> **Conciliação de status (2026-09-24):** a PR #2 (`codex/scrum-27-28-sending`,
+> merge `4300577`) adicionou as rotas reais `POST /messages/send` e
+> `POST /messages/templates/send`, elevando `API-03`/`API-04` de "só valida"
+> para "valida e envia", ainda sem nenhum envio real disparado contra a conta.
+> `npm test` passa com **70/70** testes e `npm run check` sem erros
+> (verificado localmente em 2026-09-24 após `npm ci`). Nenhuma credencial
+> Infobip de produção foi configurada; `docs/HOMOLOGATION.md` e
+> `docs/IMPLEMENTATION_STATUS.md` documentam o roteiro pendente para o
+> primeiro envio real autorizado.
 
 ---
 
@@ -161,19 +171,18 @@ em `AT2`, já que depende do backend existir.)*
 
 ## AT2 — Backend de mensageria e gestão do projeto
 
-### PM-01 — Criar projeto no Jira e importar a estrutura do backlog — ⬜ 0%
+### PM-01 — Criar projeto no Jira e importar a estrutura do backlog — ✅ 100%
 
-- [ ] Projeto criado no Jira
-- [ ] Tickets deste backlog (`SET`/`DB`/`API`/`AUT`/`DOC`) importados como issues
+- [x] Projeto criado no Jira
+- [x] Tickets deste backlog (`SET`/`DB`/`API`/`AUT`/`DOC`) importados como issues
 
-### PM-02 — Planejar sprints (mapear tarefas em ciclos com datas) — ⬜ 0%
-
-- [ ] Tickets de `AT2`–`AT4` distribuídos em sprints com datas
+### PM-02 — Planejar sprints (mapear tarefas em ciclos com datas) — ✅ 100%
+- [x] Tickets de `AT2`–`AT4` distribuídos em sprints com datas
 - **Depende de:** PM-01
 
-### PM-03 — Criar cards por ticket com critérios de conclusão e dependências — ⬜ 0%
+### PM-03 — Criar cards por ticket com critérios de conclusão e dependências — ✅ 100%
 
-- [ ] Cada card no Jira reflete os critérios de aceite e dependências já
+- [x] Cada card no Jira reflete os critérios de aceite e dependências já
       descritos neste backlog
 - **Depende de:** PM-01, PM-02
 
@@ -311,11 +320,22 @@ Ambas as rotas chamam o mesmo cliente da **Messages API**
       `api`; parâmetros de template não são gravados
 - [x] Código de persistência de recibo publicado em Preview isolado e validado:
       `/health` em `200`; `/health/ready` em `503` sem banco e sem Infobip
+- [x] Rotas `POST /messages/send` e `POST /messages/templates/send`
+      implementadas de ponta a ponta no código (branch
+      `codex/scrum-27-28-sending`, mesclada em `main` em 2026-09-23): extraem
+      `messageId` e `status` da resposta da Infobip, rejeitam com `502` sem
+      repetição automática quando a resposta não traz `messageId`, e retornam
+      `202` com `persisted`/`warning` quando a gravação no Neon falha após o
+      envio já ter sido aceito
 - [ ] Envio real aprovado, persistência em `messages` com
       `direction: 'out'`, `sent_via: 'api'` e evento de entrega verificados
-      juntos contra a conta de homologação
-- [x] OpenAPI documenta as duas rotas de validação, inclusive nome, idioma e
-      parâmetros de template
+      juntos contra a conta de homologação — ainda depende de sender elegível,
+      template aprovado (`AUT-01`) e destinatário de homologação com opt-in
+      (roteiro em `docs/HOMOLOGATION.md`)
+- [x] OpenAPI documenta as quatro rotas (`/messages/validate`,
+      `/messages/templates/validate`, `/messages/send`,
+      `/messages/templates/send`), inclusive nome, idioma, parâmetros de
+      template e o contrato de `persisted`/`warning`
 
 - **Depende de:** SET-06, API-01, SET-05
 
@@ -333,6 +353,10 @@ separada `/messages/schedule`.
       texto e template, antes de qualquer chamada à Infobip
 - [x] Rotas de envio encaminham `sendAt` à Messages API e persistem o
       `messageId` aceito pelo provedor para reconciliação do status
+- [x] `POST /messages/send` e `POST /messages/templates/send` implementadas e
+      testadas com cliente simulado (branch `codex/scrum-27-28-sending`,
+      mesclada em `main` em 2026-09-23); `scheduled` no retorno reflete se
+      `sendAt` foi enviado
 - [ ] `sendAt` testado de ponta a ponta contra a conta real (mensagem chega no horário agendado)
 - [x] `messageId` de retorno usado como `infobip_message_id` para idempotência
 - [ ] Confirmado limite de `sendAt` para WhatsApp especificamente (180 dias é
@@ -355,10 +379,15 @@ separada `/messages/schedule`.
 - [x] `info.description` explica que `wa_id` preserva o valor de `from` sem
       normalização e registra que o formato comercial final depende de payload
       real (`DOC-01`)
+- [x] Rotas `POST /messages/send` e `POST /messages/templates/send`
+      documentadas com os códigos `202`/`400`/`401`/`502`/`503` e a orientação
+      de não repetir envio automaticamente em caso de falha após aceite
+      (adicionado em 2026-09-23, PR #2)
 
-**Evidência:** OpenAPI cobre as cinco superfícies HTTP locais e os dois
-formatos de webhook mapeados; teste de contrato passou em 2026-09-20 sem
-chamar a Infobip.
+**Evidência:** OpenAPI cobre as sete superfícies HTTP locais (`/health`,
+webhook de entrada, 4 rotas de mensagens, docs) e os dois formatos de webhook
+mapeados; suíte de testes local passou com **70/70** em 2026-09-24
+(`npm run check` e `npm test`, após `npm ci`) sem chamar a Infobip.
 
 - **Depende de:** API-02, API-03
 
