@@ -20,7 +20,13 @@ function validateSendAt(sendAt) {
     return;
   }
 
-  if (typeof sendAt !== 'string' || Number.isNaN(Date.parse(sendAt))) {
+  const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/i;
+
+  if (
+    typeof sendAt !== 'string' ||
+    !timestampPattern.test(sendAt) ||
+    Number.isNaN(Date.parse(sendAt))
+  ) {
     throw new TypeError('sendAt must be a valid ISO 8601 timestamp when provided.');
   }
 
@@ -30,7 +36,11 @@ function validateSendAt(sendAt) {
 }
 
 function buildTextMessage({ sender, to, text, sendAt }) {
-  if (!sender || !to || !text) {
+  if (
+    typeof sender !== 'string' || sender.trim() === '' ||
+    typeof to !== 'string' || to.trim() === '' ||
+    typeof text !== 'string' || text.trim() === ''
+  ) {
     throw new TypeError('sender, to, and text are required.');
   }
 
@@ -56,7 +66,12 @@ function buildTextMessage({ sender, to, text, sendAt }) {
 }
 
 function buildTemplateMessage({ sender, to, templateName, language, parameters = [], sendAt }) {
-  if (!sender || !to || !templateName || !language) {
+  if (
+    typeof sender !== 'string' || sender.trim() === '' ||
+    typeof to !== 'string' || to.trim() === '' ||
+    typeof templateName !== 'string' || templateName.trim() === '' ||
+    typeof language !== 'string' || language.trim() === ''
+  ) {
     throw new TypeError('sender, to, templateName, and language are required.');
   }
 
@@ -104,19 +119,28 @@ function createInfobipMessagesClient({ baseUrl, apiKey, fetchImpl = fetch }) {
     throw new TypeError('Infobip API key is required.');
   }
 
-  async function validateMessage(message) {
-    const response = await fetchImpl(
-      `${normalizedBaseUrl}/messages-api/1/messages/validate`,
-      {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `App ${apiKey}`,
-          'Content-Type': 'application/json',
+  async function requestMessagesApi(path, message) {
+    let response;
+
+    try {
+      response = await fetchImpl(
+        `${normalizedBaseUrl}${path}`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `App ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
         },
-        body: JSON.stringify(message),
-      },
-    );
+      );
+    } catch {
+      throw new InfobipMessagesApiError({
+        status: null,
+        details: { code: 'INFOBIP_UNAVAILABLE' },
+      });
+    }
 
     const details = await parseJson(response);
 
@@ -131,14 +155,27 @@ function createInfobipMessagesClient({ baseUrl, apiKey, fetchImpl = fetch }) {
   }
 
   async function validateTextMessage(message) {
-    return validateMessage(buildTextMessage(message));
+    return requestMessagesApi('/messages-api/1/messages/validate', buildTextMessage(message));
   }
 
   async function validateTemplateMessage(message) {
-    return validateMessage(buildTemplateMessage(message));
+    return requestMessagesApi('/messages-api/1/messages/validate', buildTemplateMessage(message));
   }
 
-  return { validateTemplateMessage, validateTextMessage };
+  async function sendTextMessage(message) {
+    return requestMessagesApi('/messages-api/1/messages', buildTextMessage(message));
+  }
+
+  async function sendTemplateMessage(message) {
+    return requestMessagesApi('/messages-api/1/messages', buildTemplateMessage(message));
+  }
+
+  return {
+    sendTemplateMessage,
+    sendTextMessage,
+    validateTemplateMessage,
+    validateTextMessage,
+  };
 }
 
 export {

@@ -291,7 +291,8 @@ Ambas as rotas chamam o mesmo cliente da **Messages API**
 
 - [x] Cliente local constrói e valida o payload de texto da Messages API
       (`channel: "WHATSAPP"`, `content.body`) sem selecionar endpoint de envio
-- [x] Rota interna `POST /messages/validate` chama somente o endpoint de
+- [x] Rotas internas `POST /messages/validate` e
+      `POST /messages/templates/validate` chamam somente o endpoint de
       validação da Infobip; fica em `503` sem credenciais e token internos e
       retorna `401` antes da validação quando o token Bearer é inválido
 - [x] Rota interna `POST /messages/templates/validate` constrói somente o
@@ -301,12 +302,18 @@ Ambas as rotas chamam o mesmo cliente da **Messages API**
       autorização específica para disparar uma mensagem
 - [ ] Envio de template via Messages API — formato de `content` confirmado em `SET-05`
 - [x] Erros da Infobip são encapsulados localmente com `status`/`details`
-- [x] Recibo de envio autorizado tem persistência local atômica preparada:
+- [x] Rotas autenticadas `POST /messages/send` e
+      `POST /messages/templates/send` chamam a Messages API somente quando
+      credenciais, token interno e Neon estão configurados; o agendamento
+      opcional é encaminhado no mesmo payload
+- [x] Recibo aceito pelo provedor tem persistência local atômica preparada:
       `messageId`, contato e conversa aberta são gravados juntos como saída
-      `api`, sem habilitar rota de envio
+      `api`; parâmetros de template não são gravados
 - [x] Código de persistência de recibo publicado em Preview isolado e validado:
       `/health` em `200`; `/health/ready` em `503` sem banco e sem Infobip
-- [ ] Mensagem enviada é gravada em `messages` com `direction: 'out'`, `sent_via: 'api'`
+- [ ] Envio real aprovado, persistência em `messages` com
+      `direction: 'out'`, `sent_via: 'api'` e evento de entrega verificados
+      juntos contra a conta de homologação
 - [x] OpenAPI documenta as duas rotas de validação, inclusive nome, idioma e
       parâmetros de template
 
@@ -324,12 +331,16 @@ separada `/messages/schedule`.
       sem disparar mensagem
 - [x] Validação local exige que `sendAt` seja ISO 8601 e esteja no futuro para
       texto e template, antes de qualquer chamada à Infobip
+- [x] Rotas de envio encaminham `sendAt` à Messages API e persistem o
+      `messageId` aceito pelo provedor para reconciliação do status
 - [ ] `sendAt` testado de ponta a ponta contra a conta real (mensagem chega no horário agendado)
-- [ ] `messageId` de retorno usado como `infobip_message_id` para idempotência
+- [x] `messageId` de retorno usado como `infobip_message_id` para idempotência
 - [ ] Confirmado limite de `sendAt` para WhatsApp especificamente (180 dias é
       o limite documentado para outros canais, ex: SMS — não confirmado ainda
       para WhatsApp)
-- [ ] Erros e limites de janela (tempo mínimo/máximo no futuro) tratados
+- [x] Erros retornam status e detalhes da Infobip; `sendAt` inválido ou vencido
+      é rejeitado localmente antes da chamada externa
+- [ ] Limites mínimo/máximo de `sendAt` para WhatsApp confirmados na conta real
 - [x] OpenAPI expõe `sendAt` nas rotas de validação de texto e template
 
 - **Depende de:** API-03
@@ -337,7 +348,7 @@ separada `/messages/schedule`.
 ### API-05 — Documentação interativa das APIs (Swagger) — ✅ 100%
 
 - [x] Swagger UI servido em `/docs`, spec OpenAPI 3.1 em `/docs.json`
-- [x] Rotas locais atuais (`/health`, webhook de entrada e validação sem envio)
+- [x] Rotas locais atuais (`/health`, webhook de entrada, validação e envio)
       descritas com respostas de configuração e autorização
 - [x] Contratos de webhook de entrada e relatório de entrega, além de texto,
       template e `sendAt` de validação, descritos e protegidos por teste local

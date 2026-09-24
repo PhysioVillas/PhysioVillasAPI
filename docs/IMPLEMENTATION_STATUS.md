@@ -2,6 +2,27 @@
 
 **Data do registro:** 2026-09-20
 
+## Atualização — 2026-09-23
+
+O SCRUM-25 foi integrado à `main` pela PR #1 (merge commit `c1a1e2f`). O
+deployment automático da `main` ficou Ready e o Preview com Neon retornou
+`GET /health/ready = 200` (`ready/schema_ready`). `DATABASE_URL` segue apenas
+no escopo Preview, conforme o ambiente temporário de homologação.
+
+Na branch `codex/scrum-27-28-sending`, API-03 ganhou rotas autenticadas para
+envio de texto/template pela Messages API. Elas exigem simultaneamente banco,
+token interno e configuração Infobip; o recibo `messageId` fica associado à
+mensagem de saída, sem guardar parâmetros de template. A mesma rota repassa
+`sendAt` futuro e valida o formato ISO 8601. Os testes cobrem os contratos com
+cliente simulado; nenhum envio real foi feito, nenhuma credencial Infobip foi
+configurada e o limite de agendamento específico de WhatsApp continua pendente.
+
+No estado desta branch, `npm test` passou com 70 testes e `npm run check`
+passou. API-02 continua sem o payload real `smb_message_echoes` e sem a
+autenticação de webhook confirmada no tenant. API-03/API-04 aguardam teste real
+com sender/template elegível e destinatário autorizado; por isso os tickets
+continuam em andamento.
+
 ## API-01 — concluído localmente
 
 O corte técnico local está concluído: há scaffold Node.js com Express em ESM e

@@ -41,9 +41,11 @@ fora de ordem sem reter o payload bruto.
 Quando um envio vier a ser autorizado e a Messages API aceitar a solicitação,
 o backend usa o recibo (`messageId`) para gravar atomicamente o contato, a
 conversa aberta e a mensagem de saída com `direction: 'out'` e
-`sent_via: 'api'`. Essa operação ainda não é acionada por nenhuma rota de
-envio: a API atual só oferece validação e permanece incapaz de disparar
-mensagens sem uma decisão específica.
+`sent_via: 'api'`. As rotas autenticadas de envio agora executam essa operação
+somente quando banco, credenciais Infobip e token interno estão configurados.
+O registro de template guarda apenas o nome, nunca os parâmetros preenchidos.
+O envio continua desligado em ambientes sem essas configurações; nenhuma
+mensagem real foi enviada por estes testes locais.
 
 ## Módulo analítico (`reporting`)
 

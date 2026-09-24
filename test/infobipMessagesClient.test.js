@@ -59,6 +59,29 @@ test('validateTextMessage uses the validation endpoint and never the send endpoi
   });
 });
 
+test('sendTextMessage uses the Messages API send endpoint and returns its receipt', async () => {
+  const calls = [];
+  const receipt = { messages: [{ messageId: 'outbound-id' }] };
+  const client = createInfobipMessagesClient({
+    ...credentials,
+    fetchImpl: async (...args) => {
+      calls.push(args);
+      return { ok: true, status: 200, json: async () => receipt };
+    },
+  });
+
+  assert.deepEqual(await client.sendTextMessage(message), receipt);
+  assert.equal(calls[0][0], 'https://example.api.infobip.com/messages-api/1/messages');
+  assert.deepEqual(JSON.parse(calls[0][1].body), {
+    messages: [{
+      channel: 'WHATSAPP',
+      sender: 'sender',
+      destinations: [{ to: 'recipient' }],
+      content: { body: { type: 'TEXT', text: 'Validation only.' } },
+    }],
+  });
+});
+
 test('validateTextMessage exposes a failed validation without attempting delivery', async () => {
   const client = createInfobipMessagesClient({
     ...credentials,
@@ -104,6 +127,25 @@ test('validateTextMessage accepts the optional scheduling field without sending'
     client.validateTextMessage({ ...message, sendAt: 'not-a-date' }),
     /sendAt must be a valid ISO 8601 timestamp/,
   );
+  await assert.rejects(
+    client.validateTextMessage({ ...message, sendAt: '2026-10-01' }),
+    /sendAt must be a valid ISO 8601 timestamp/,
+  );
+});
+
+test('Infobip transport failures are represented as upstream failures without leaking the error', async () => {
+  const client = createInfobipMessagesClient({
+    ...credentials,
+    fetchImpl: async () => { throw new TypeError('private transport detail'); },
+  });
+
+  await assert.rejects(
+    client.sendTextMessage(message),
+    (error) => error instanceof InfobipMessagesApiError &&
+      error.status === null &&
+      error.details.code === 'INFOBIP_UNAVAILABLE' &&
+      !error.message.includes('private transport detail'),
+  );
 });
 
 test('schedule validation refuses a time in the past before any Infobip request', () => {
@@ -147,6 +189,31 @@ test('template validation matches the documented Messages API contract and maps 
   });
 });
 
+test('sendTemplateMessage uses the same send endpoint with the template payload', async () => {
+  const calls = [];
+  const client = createInfobipMessagesClient({
+    ...credentials,
+    fetchImpl: async (...args) => {
+      calls.push(args);
+      return { ok: true, status: 200, json: async () => ({ messages: [{ messageId: 'template-id' }] }) };
+    },
+  });
+
+  await client.sendTemplateMessage({
+    sender: 'sender',
+    to: 'recipient',
+    templateName: 'appointment_reminder',
+    language: 'pt_BR',
+    parameters: ['Luiz'],
+  });
+
+  assert.equal(calls[0][0], 'https://example.api.infobip.com/messages-api/1/messages');
+  assert.deepEqual(JSON.parse(calls[0][1].body).messages[0].template, {
+    templateName: 'appointment_reminder',
+    language: 'pt_BR',
+  });
+});
+
 test('template builder rejects invalid names and placeholder values before making a request', () => {
   assert.throws(
     () => buildTemplateMessage({ sender: 'sender', to: 'recipient', language: 'pt_BR' }),
@@ -162,6 +229,20 @@ test('template builder rejects invalid names and placeholder values before makin
     }),
     /parameters/,
   );
+});
+
+test('message builders reject non-string destinations before calling the provider', async () => {
+  let called = false;
+  const client = createInfobipMessagesClient({
+    ...credentials,
+    fetchImpl: async () => { called = true; },
+  });
+
+  await assert.rejects(
+    client.sendTextMessage({ ...message, to: { phone: 'recipient' } }),
+    /sender, to, and text are required/,
+  );
+  assert.equal(called, false);
 });
 
 test('the client refuses incomplete configuration before making a request', () => {

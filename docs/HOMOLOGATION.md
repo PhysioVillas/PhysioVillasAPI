@@ -9,6 +9,13 @@ WhatsApp. A Vercel classifica a primeira publicação de um projeto novo como
 `production` por mecânica da plataforma; ela é somente o ambiente isolado de
 homologação e não substitui a produção futura.
 
+**Atualização em 2026-09-23:** a correção de bootstrap do SCRUM-25 foi
+integrada na `main`; o deployment automático ficou Ready. O Preview ligado ao
+Neon confirmou `/health/ready = 200` (`ready/schema_ready`). A variável de
+banco continua restrita ao Preview. A branch `codex/scrum-27-28-sending`
+acrescenta rotas reais de envio/agendamento, mas elas não foram integradas ou
+ativadas por credenciais; nenhuma mensagem foi disparada.
+
 ## Limite do ambiente de teste
 
 O ambiente deve servir exclusivamente para validar a API, o schema e a
@@ -27,6 +34,12 @@ envio de WhatsApp.
 Sem as variáveis da Infobip, `POST /messages/validate` permanece em `503` e
 não consegue enviar mensagens. Sem `INFOBIP_WEBHOOK_TOKEN`, o webhook também
 permanece em `503`. Esse é o estado desejado para a primeira publicação.
+
+As rotas `POST /messages/send` e `POST /messages/templates/send` estão na
+branch de trabalho e também falham fechado sem banco, token interno e
+credenciais Infobip. Não configure essas variáveis no Preview até haver sender
+e destinatário de teste definidos; o primeiro envio exige autorização
+específica e não é executado automaticamente.
 
 Em 2026-09-20, a mesma configuração foi exercitada localmente antes do
 preview: `GET /health` e `GET /docs.json` responderam `200`; `GET

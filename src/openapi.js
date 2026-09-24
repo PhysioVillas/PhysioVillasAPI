@@ -126,6 +126,36 @@ const openApiDocument = {
         },
       },
     },
+    '/messages/send': {
+      post: {
+        summary: 'Envia texto pela Messages API e persiste o recibo no Neon',
+        description: 'Esta rota dispara uma mensagem externa. Requer token interno, credenciais Infobip e banco configurados. sendAt opcional agenda o envio no provedor; limites específicos de WhatsApp precisam ser confirmados com a conta real.',
+        security: [{ ChatManagerBearer: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['to', 'text'],
+                properties: {
+                  to: { type: 'string', description: 'Destinatário no formato aceito pela Infobip' },
+                  text: { type: 'string' },
+                  sendAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          202: { description: 'Pedido aceito; confira persisted. Se for false, não repita o envio: reconcilie messageId.' },
+          400: { description: 'Corpo inválido' },
+          401: { description: 'Token interno inválido' },
+          502: { description: 'Falha na Infobip ou resposta sem messageId; não repita automaticamente' },
+          503: { description: 'Envio ainda não configurado' },
+        },
+      },
+    },
     '/messages/templates/validate': {
       post: {
         summary: 'Valida um template WhatsApp na Messages API sem enviar mensagem',
@@ -154,6 +184,38 @@ const openApiDocument = {
           401: { description: 'Token interno inválido' },
           502: { description: 'Infobip recusou a validação' },
           503: { description: 'Validação ainda não configurada' },
+        },
+      },
+    },
+    '/messages/templates/send': {
+      post: {
+        summary: 'Envia template WhatsApp e persiste o recibo sem guardar parâmetros',
+        description: 'Esta rota dispara uma mensagem externa. Requer token interno, credenciais Infobip e banco configurados. sendAt opcional agenda o envio no provedor.',
+        security: [{ ChatManagerBearer: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['to', 'templateName', 'language'],
+                properties: {
+                  to: { type: 'string', description: 'Destinatário no formato aceito pela Infobip' },
+                  templateName: { type: 'string' },
+                  language: { type: 'string', example: 'pt_BR' },
+                  parameters: { type: 'array', items: { type: 'string' } },
+                  sendAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          202: { description: 'Pedido aceito; confira persisted. Se for false, não repita o envio: reconcilie messageId.' },
+          400: { description: 'Corpo inválido' },
+          401: { description: 'Token interno inválido' },
+          502: { description: 'Falha na Infobip ou resposta sem messageId; não repita automaticamente' },
+          503: { description: 'Envio ainda não configurado' },
         },
       },
     },
