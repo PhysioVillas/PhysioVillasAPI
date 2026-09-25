@@ -2,8 +2,11 @@ import { Router } from 'express';
 import { hasExpectedBearerToken } from '../middleware/bearerToken.js';
 import { normalizeInfobipWebhookPayload } from '../services/infobipWebhookNormalizer.js';
 
-function createInfobipWebhooksRouter({ database, webhookToken } = {}) {
+const MAX_CAPTURED_PAYLOADS = 20;
+
+function createInfobipWebhooksRouter({ database, webhookToken, captureUnmappedPayloads = false } = {}) {
   const router = Router();
+  const capturedPayloads = [];
 
   router.post('/inbound', async (request, response, next) => {
     if (database === undefined || typeof webhookToken !== 'string' || webhookToken === '') {
@@ -37,6 +40,14 @@ function createInfobipWebhooksRouter({ database, webhookToken } = {}) {
 
       const accepted = inboundMessages.length + deliveryReports.length;
 
+      if (captureUnmappedPayloads && ignored > 0) {
+        capturedPayloads.push({ capturedAt: new Date().toISOString(), payload: request.body });
+
+        if (capturedPayloads.length > MAX_CAPTURED_PAYLOADS) {
+          capturedPayloads.shift();
+        }
+      }
+
       return response.status(accepted > 0 ? 200 : 202).json({
         accepted,
         ignored,
@@ -44,6 +55,28 @@ function createInfobipWebhooksRouter({ database, webhookToken } = {}) {
     } catch (error) {
       return next(error);
     }
+  });
+
+  router.get('/debug-log', (request, response) => {
+    if (!captureUnmappedPayloads) {
+      return response.status(404).json({
+        error: {
+          code: 'DEBUG_LOG_DISABLED',
+          message: 'Unmapped payload capture is not enabled.',
+        },
+      });
+    }
+
+    if (typeof webhookToken !== 'string' || webhookToken === '' || !hasExpectedBearerToken(request, webhookToken)) {
+      return response.status(401).json({
+        error: {
+          code: 'UNAUTHORIZED_WEBHOOK',
+          message: 'Webhook authorization failed.',
+        },
+      });
+    }
+
+    return response.status(200).json({ capturedPayloads });
   });
 
   return router;

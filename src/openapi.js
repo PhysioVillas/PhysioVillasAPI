@@ -97,6 +97,18 @@ const openApiDocument = {
         },
       },
     },
+    '/webhooks/infobip/debug-log': {
+      get: {
+        summary: 'Lista os últimos eventos de webhook não mapeados capturados em memória',
+        description: 'Rota temporária para o teste de coexistência (SET-04): expõe o payload bruto dos eventos não reconhecidos pelo normalizer (ex: smb_message_echoes), guardado só em memória (últimos 20, sem persistência em banco). Ativa automaticamente quando o webhook está configurado (banco e token); rota e captura devem ser removidas depois que o parser de coexistência estiver implementado.',
+        security: [{ InfobipWebhookBearer: [] }],
+        responses: {
+          200: { description: 'Lista dos últimos payloads não mapeados capturados' },
+          401: { description: 'Token de webhook inválido' },
+          404: { description: 'Captura de payloads desativada' },
+        },
+      },
+    },
     '/messages/validate': {
       post: {
         summary: 'Valida texto ou agendamento na Messages API sem enviar mensagem',

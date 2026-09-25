@@ -26,6 +26,7 @@ function createRuntimeApp({
     messagesClient,
     whatsappSender: infobipMessagesConfig?.whatsappSender,
     chatManagerApiToken: config.chatManagerApiToken,
+    captureUnmappedWebhookPayloads: database !== undefined && config.infobip.webhookToken !== undefined,
   });
 
   return { app, config };
