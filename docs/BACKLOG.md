@@ -88,7 +88,7 @@ AT4 — Entrega do Pacote 2
 
 - [x] Endpoint e payload de envio de texto livre confirmados contra a conta real
 
-### SET-04 — Confirmar rota e fluxo de coexistência com WhatsApp Web (`smb_message_echoes`) — 🔄 Em andamento
+### SET-04 — Confirmar rota e fluxo de coexistência com WhatsApp Web (`smb_message_echoes`) — ✅ 100%
 
 *(cronograma: `AT1 / SET-04`)*
 
@@ -99,11 +99,14 @@ na conta da clínica.
 
 - [x] Onboarding de coexistência testado na conta real (Embedded Signup com
       `featureType: whatsapp_business_app_onboarding`, ou fluxo pelo console)
-- [ ] Payload real do webhook `smb_message_echoes` capturado (mensagem
-      enviada pelo celular gera esse evento)
-- [ ] Campo discriminador identificado — como diferenciar, no mesmo endpoint
+- [x] Payload real do webhook `smb_message_echoes` capturado (mensagem
+      enviada pelo celular gera esse evento) — capturado em 2026-09-25 em
+      produção, registrado de forma redigida em `docs/INFOBIP_RULES.md`
+- [x] Campo discriminador identificado — como diferenciar, no mesmo endpoint
       entre mensagem recebida normal / status / eco de coexistência / chunk de
-      histórico
+      histórico: o eco usa o envelope `entry[].changes[].value` com
+      `field: "smb_message_echoes"`, enquanto inbound e status usam `results[]`.
+      O chunk de histórico ainda não tem payload capturado
 - [x] Decisão de coexistência e lacunas registradas em `docs/INFOBIP_RULES.md`
       para consolidação em `DOC-01`
 
@@ -148,7 +151,9 @@ em `AT2`, já que depende do backend existir.)*
 - [ ] Payload de atualização de status (`DELIVERED`/`READ`/`FAILED`)
 - [ ] Formato do identificador do remetente (`wa_id`/número: com ou sem `+`,
       com ou sem 9º dígito) — **não presumir formato Meta**, verificar contra
-      payload real
+      payload real. Em 2026-09-25 o eco de coexistência trouxe o paciente sem o
+      9º dígito e outro log de inbound trouxe o mesmo paciente com ele; a
+      divergência está registrada em `docs/INFOBIP_RULES.md` e segue pendente
 - [ ] Mecanismo de segurança do webhook (assinatura, IP allowlist, Basic Auth,
       ou nenhum)
 - [ ] Como a Infobip sinaliza erro de janela de 24h
@@ -267,8 +272,11 @@ Neon e o deploy do backend.)*
 - [x] Contrato público de entrega reconciliado com a Infobip: `messageId`,
       `doneAt` e `status.name` sustentam o parser atual; coexistência continua
       pendente de payload real, sem criar subscription ou webhook
-- [ ] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
-      gravando com `direction: 'out'`, `sent_via: 'business_app'`
+- [x] Reconhece e trata o eco de coexistência `smb_message_echoes` (`SET-04`),
+      gravando com `direction: 'out'`, `sent_via: 'business_app'` — parser do
+      payload real de 2026-09-25 em `src/services/infobipWebhookNormalizer.js`,
+      coberto por `test/infobipWebhooks.test.js`; outros `field` de
+      `entry[].changes[]` recebem `202` sem persistência
 - [ ] Reconhece eventos de sincronização de histórico sem quebrar o parser em
       payloads não mapeados ainda
 - [ ] Confirma se o inbound da **Messages API** (usada em `API-03` para envio)
@@ -413,13 +421,19 @@ chamar a Infobip.
 
 - **Depende de:** AUT-01, API-04
 
-### SET-07 — Ativar coexistência API + WhatsApp Business App — ⬜ 0%
+### SET-07 — Ativar coexistência API + WhatsApp Business App — 🔄 Em andamento
 
 *(cronograma: `AT3 / SET-05` — reaproveita o código `SET-05` para "ativar
 coexistência em produção", diferente do `SET-05` de "teste de templates" em
 `AT1`. Renumerado aqui para `SET-07` para evitar ambiguidade.)*
 
-- [ ] Coexistência ativada em produção na conta real (não apenas testada em sandbox, ver `SET-04`)
+- [x] Coexistência ativada em produção na conta real (não apenas testada em sandbox, ver `SET-04`)
+      — eco `smb_message_echoes` recebido em produção em 2026-09-25
+- [ ] Mecanismo permanente de autenticação do webhook definido: a subscription
+      real oferece só Básico/Hmac/OAuth e o backend espera Bearer. Decisão de
+      2026-09-25: operar temporariamente sem autenticação
+      (`allowUnauthenticatedInbound: true` em produção) e resolver na próxima
+      sprint
 - [ ] Confirmado que o app do celular continua funcionando normalmente após o
       onboarding (throughput de 20 msg/s é o limite documentado)
 - [ ] Equipe da clínica orientada sobre o funcionamento

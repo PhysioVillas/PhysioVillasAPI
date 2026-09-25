@@ -40,3 +40,29 @@ test('runtime remains safely disconnected when no database or Infobip configurat
   assert.equal(databaseCreated, false);
   assert.equal(clientCreated, false);
 });
+
+test('runtime inbound webhook temporarily accepts unauthenticated requests until an Infobip-compatible auth is chosen', async () => {
+  const calls = [];
+  const { app } = createRuntimeApp({
+    env: {
+      DATABASE_URL: 'postgres://neon.example/chatmanager',
+      INFOBIP_WEBHOOK_TOKEN: 'receiver-token',
+    },
+    createDatabaseFactory: () => ({ persistWebhookMessage: async (message) => calls.push(message) }),
+  });
+  const server = app.listen(0);
+
+  try {
+    await new Promise((resolve) => server.once('listening', resolve));
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entry: [] }),
+    });
+
+    assert.equal(response.status, 202);
+    assert.equal(calls.length, 0);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

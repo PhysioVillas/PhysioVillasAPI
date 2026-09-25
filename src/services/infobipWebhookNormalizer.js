@@ -64,7 +64,98 @@ function normalizeDeliveryReportResult(result) {
   };
 }
 
+// Coexistence echoes carry the epoch in seconds as a string (e.g. "1790362521"),
+// not the ISO 8601 used by the results[] shape.
+function readEpochSecondsTimestamp(value) {
+  const seconds = readNonEmptyString(value);
+
+  if (seconds === null || !/^\d+$/.test(seconds)) {
+    return null;
+  }
+
+  const date = new Date(Number(seconds) * 1000);
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+// A message sent from the WhatsApp Business App on the coexistence number.
+// `to` is the patient and is kept exactly as received (no digit normalization).
+function normalizeMessageEcho(echo) {
+  if (echo === null || typeof echo !== 'object' || Array.isArray(echo)) {
+    return null;
+  }
+
+  const waId = readNonEmptyString(echo.to);
+  const infobipMessageId = readNonEmptyString(echo.id);
+  const messageType = readNonEmptyString(echo.type);
+
+  if (waId === null || infobipMessageId === null || messageType === null) {
+    return null;
+  }
+
+  const createdAt = readEpochSecondsTimestamp(echo.timestamp);
+
+  return {
+    contact: {
+      waId,
+      profileName: null,
+      lastMessageAt: createdAt,
+    },
+    message: {
+      infobipMessageId,
+      waId,
+      direction: 'out',
+      sentVia: 'business_app',
+      body: readNonEmptyString(echo.text?.body),
+      messageType: messageType.toLowerCase(),
+      status: 'sent',
+      createdAt,
+    },
+  };
+}
+
+// Meta-style envelope (entry[].changes[].value) observed on 2026-09-25 for the
+// coexistence `smb_message_echoes` event. Other change fields (e.g. history
+// sync) have no captured payload yet and are counted as ignored.
+function normalizeEntryPayload(entries) {
+  const inboundMessages = [];
+  let ignored = 0;
+
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+
+    if (changes.length === 0) {
+      ignored += 1;
+    }
+
+    for (const change of changes) {
+      const echoes = change?.field === 'smb_message_echoes' ? change.value?.messageEchoes : undefined;
+
+      if (!Array.isArray(echoes) || echoes.length === 0) {
+        ignored += 1;
+        continue;
+      }
+
+      for (const echo of echoes) {
+        const normalized = normalizeMessageEcho(echo);
+
+        if (normalized === null) {
+          ignored += 1;
+        } else {
+          inboundMessages.push(normalized);
+        }
+      }
+    }
+  }
+
+  return { inboundMessages, deliveryReports: [], ignored };
+}
+
 function normalizeInfobipWebhookPayload(payload) {
+  if (payload !== null && typeof payload === 'object' && Array.isArray(payload.entry)) {
+    return normalizeEntryPayload(payload.entry);
+  }
+
   if (payload === null || typeof payload !== 'object' || !Array.isArray(payload.results)) {
     return { inboundMessages: [], deliveryReports: [], ignored: 1 };
   }

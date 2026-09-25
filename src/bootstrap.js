@@ -27,11 +27,10 @@ function createRuntimeApp({
     whatsappSender: infobipMessagesConfig?.whatsappSender,
     chatManagerApiToken: config.chatManagerApiToken,
     captureUnmappedWebhookPayloads: database !== undefined && config.infobip.webhookToken !== undefined,
-    // TEMPORARY (SET-04 payload capture): the Infobip subscription UI has no
-    // raw Bearer auth option (only Basic/Hmac/OAuth), so the deployed
-    // subscription can't send our expected header yet. Revert to false once
-    // the real smb_message_echoes payload has been captured and a
-    // compatible auth mechanism is configured on both sides.
+    // TEMPORARY (decided 2026-09-25, to be resolved next sprint): the
+    // Infobip subscription only offers Basic/Hmac/OAuth, not our Bearer
+    // header, so production accepts inbound webhooks without authentication
+    // until a permanent mechanism is chosen (SET-07).
     allowUnauthenticatedInbound: true,
   });
 

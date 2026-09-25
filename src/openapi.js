@@ -26,7 +26,7 @@ const openApiDocument = {
     '/webhooks/infobip/inbound': {
       post: {
         summary: 'Recebe evento WhatsApp de entrada ou relatório de entrega da Infobip',
-        description: 'TEMPORÁRIO (captura de payload para SET-04): a subscription da Infobip não oferece Bearer bruto (só Básico/Hmac/OAuth), então esta rota está aceitando requisições sem autenticação em produção enquanto o payload real de smb_message_echoes não é capturado. Reverter para exigir o Bearer assim que o parser (API-02) estiver implementado.',
+        description: 'Aceita dois envelopes: `results[]` (entrada e relatórios de entrega da Infobip) e `entry[].changes[]` (eco de coexistência `smb_message_echoes`, gravado como mensagem de saída enviada pelo WhatsApp Business App). Outros campos de `changes[]` são reconhecidos sem persistência. TEMPORÁRIO (decisão de 2026-09-25): a subscription da Infobip oferece só Básico/Hmac/OAuth, então em produção esta rota aceita requisições sem autenticação até a definição do mecanismo permanente na próxima sprint.',
         security: [{ InfobipWebhookBearer: [] }],
         requestBody: {
           required: true,
@@ -34,8 +34,48 @@ const openApiDocument = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['results'],
                 properties: {
+                  entry: {
+                    type: 'array',
+                    description: 'Envelope de coexistência capturado em produção; somente `changes[].field = smb_message_echoes` é processado.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        changes: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              field: { type: 'string', example: 'smb_message_echoes' },
+                              value: {
+                                type: 'object',
+                                properties: {
+                                  messageEchoes: {
+                                    type: 'array',
+                                    items: {
+                                      type: 'object',
+                                      required: ['to', 'id', 'type'],
+                                      properties: {
+                                        from: { type: 'string', description: 'Número da clínica' },
+                                        to: { type: 'string', description: 'Paciente, gravado exatamente como recebido' },
+                                        id: { type: 'string', example: 'wamid.xxx' },
+                                        timestamp: { type: 'string', description: 'Epoch em segundos', example: '1790362521' },
+                                        type: { type: 'string', example: 'text' },
+                                        text: {
+                                          type: 'object',
+                                          properties: { body: { type: 'string' } },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
                   results: {
                     type: 'array',
                     description: 'Somente os campos mapeados são processados; o payload bruto não é armazenado.',
