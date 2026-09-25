@@ -27,9 +27,11 @@ function createRuntimeApp({
     whatsappSender: infobipMessagesConfig?.whatsappSender,
     chatManagerApiToken: config.chatManagerApiToken,
     captureUnmappedWebhookPayloads: database !== undefined && config.infobip.webhookToken !== undefined,
-    // allowUnauthenticatedInbound was enabled only to capture the real
-    // smb_message_echoes payload on 2026-09-25 and has been reverted; the
-    // inbound webhook requires the Bearer token again (default false).
+    // TEMPORARY (decided 2026-09-25, to be resolved next sprint): the
+    // Infobip subscription only offers Basic/Hmac/OAuth, not our Bearer
+    // header, so production accepts inbound webhooks without authentication
+    // until a permanent mechanism is chosen (SET-07).
+    allowUnauthenticatedInbound: true,
   });
 
   return { app, config };

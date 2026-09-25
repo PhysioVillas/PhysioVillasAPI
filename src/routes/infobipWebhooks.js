@@ -23,9 +23,9 @@ function createInfobipWebhooksRouter({
       });
     }
 
-    // allowUnauthenticatedInbound (default false) exists only for short,
-    // deliberate captures of unmapped payloads (used once for
-    // smb_message_echoes on 2026-09-25). Production keeps it disabled.
+    // allowUnauthenticatedInbound (default false) is enabled in production
+    // only as a temporary decision (2026-09-25) until a webhook auth
+    // mechanism compatible with the Infobip subscription is chosen.
     if (!allowUnauthenticatedInbound && !hasExpectedBearerToken(request, webhookToken)) {
       return response.status(401).json({
         error: {

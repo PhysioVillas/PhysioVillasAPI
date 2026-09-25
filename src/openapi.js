@@ -26,7 +26,7 @@ const openApiDocument = {
     '/webhooks/infobip/inbound': {
       post: {
         summary: 'Recebe evento WhatsApp de entrada ou relatório de entrega da Infobip',
-        description: 'Aceita dois envelopes: `results[]` (entrada e relatórios de entrega da Infobip) e `entry[].changes[]` (eco de coexistência `smb_message_echoes`, gravado como mensagem de saída enviada pelo WhatsApp Business App). Outros campos de `changes[]` são reconhecidos sem persistência.',
+        description: 'Aceita dois envelopes: `results[]` (entrada e relatórios de entrega da Infobip) e `entry[].changes[]` (eco de coexistência `smb_message_echoes`, gravado como mensagem de saída enviada pelo WhatsApp Business App). Outros campos de `changes[]` são reconhecidos sem persistência. TEMPORÁRIO (decisão de 2026-09-25): a subscription da Infobip oferece só Básico/Hmac/OAuth, então em produção esta rota aceita requisições sem autenticação até a definição do mecanismo permanente na próxima sprint.',
         security: [{ InfobipWebhookBearer: [] }],
         requestBody: {
           required: true,

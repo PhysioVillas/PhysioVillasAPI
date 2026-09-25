@@ -178,8 +178,10 @@ de `entry[].changes[]` (por exemplo, sincronização de histórico) são contado
 como `ignored` e respondidos com 202. A cobertura está em
 `test/infobipWebhooks.test.js`.
 
-Depois da captura, o bypass temporário `allowUnauthenticatedInbound` foi
-revertido: a rota volta a exigir o Bearer interno.
+Como a subscription real oferece apenas Básico, Hmac e OAuth (e não o Bearer
+interno), foi decidido em 2026-09-25 manter temporariamente
+`allowUnauthenticatedInbound` ativo em produção: a rota aceita webhooks sem
+autenticação até a definição do mecanismo permanente na próxima sprint.
 
 ### Limites do que foi validado
 
@@ -204,7 +206,7 @@ revertido: a rota volta a exigir o Bearer interno.
 | Validação sem envio | Confirmado no tenant | `POST /messages-api/1/messages/validate` aceitou o contrato em 2026-09-19; `src/routes/messages.js` não expõe rota de disparo. |
 | Relatórios de entrega | Confirmado documentalmente e protegido localmente | `src/services/infobipWebhookNormalizer.js` mapeia `messageId`, `doneAt`, status e erro; `src/services/database.js` ignora atualização fora de ordem. |
 | Inbound comercial e formato do `wa_id` | Pendente | Requer payload real do remetente/WABA da clínica; o parser preserva `from` sem normalização até essa evidência. |
-| Segurança de subscription/webhook | Pendente | A rota exige Bearer interno em `src/routes/infobipWebhooks.js`; a tela de subscription real oferece apenas Básico, Hmac e OAuth, então o mecanismo permanente ainda precisa ser decidido. |
+| Segurança de subscription/webhook | Pendente — sem autenticação temporariamente | A tela de subscription real oferece apenas Básico, Hmac e OAuth; por decisão de 2026-09-25, `src/bootstrap.js` ativa `allowUnauthenticatedInbound` em produção até a escolha do mecanismo permanente na próxima sprint. |
 | Coexistência e ecos do Business App | Confirmado no tenant | Payload real capturado em 2026-09-25; `src/services/infobipWebhookNormalizer.js` grava o eco como `direction: out`, `sent_via: business_app`, coberto por `test/infobipWebhooks.test.js`. Sincronização de histórico e a divergência do nono dígito continuam pendentes. |
 | Falha de janela de 24 horas e limite WhatsApp de `sendAt` | Pendente | Exigem resposta real controlada; a validação local só garante formato ISO futuro. |
 

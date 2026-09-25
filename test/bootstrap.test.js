@@ -41,7 +41,7 @@ test('runtime remains safely disconnected when no database or Infobip configurat
   assert.equal(clientCreated, false);
 });
 
-test('runtime inbound webhook requires the Bearer token (temporary capture bypass reverted)', async () => {
+test('runtime inbound webhook temporarily accepts unauthenticated requests until an Infobip-compatible auth is chosen', async () => {
   const calls = [];
   const { app } = createRuntimeApp({
     env: {
@@ -60,7 +60,7 @@ test('runtime inbound webhook requires the Bearer token (temporary capture bypas
       body: JSON.stringify({ entry: [] }),
     });
 
-    assert.equal(response.status, 401);
+    assert.equal(response.status, 202);
     assert.equal(calls.length, 0);
   } finally {
     await new Promise((resolve) => server.close(resolve));

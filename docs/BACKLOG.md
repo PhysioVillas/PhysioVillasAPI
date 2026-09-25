@@ -430,8 +430,10 @@ coexistência em produção", diferente do `SET-05` de "teste de templates" em
 - [x] Coexistência ativada em produção na conta real (não apenas testada em sandbox, ver `SET-04`)
       — eco `smb_message_echoes` recebido em produção em 2026-09-25
 - [ ] Mecanismo permanente de autenticação do webhook definido: a subscription
-      real oferece só Básico/Hmac/OAuth e o backend exige Bearer; o bypass
-      temporário usado na captura já foi revertido
+      real oferece só Básico/Hmac/OAuth e o backend espera Bearer. Decisão de
+      2026-09-25: operar temporariamente sem autenticação
+      (`allowUnauthenticatedInbound: true` em produção) e resolver na próxima
+      sprint
 - [ ] Confirmado que o app do celular continua funcionando normalmente após o
       onboarding (throughput de 20 msg/s é o limite documentado)
 - [ ] Equipe da clínica orientada sobre o funcionamento
