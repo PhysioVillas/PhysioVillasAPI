@@ -178,6 +178,67 @@ test('inbound webhook records a documented delivery update without retaining its
   }]);
 });
 
+test('debug-log route is disabled by default and does not leak whether capture is possible', async () => {
+  const app = createApp({
+    database: { persistWebhookMessage: async () => undefined },
+    infobipWebhookToken: 'receiver-token',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/webhooks/infobip/debug-log`, {
+      headers: { authorization: 'Bearer receiver-token' },
+    });
+
+    assert.equal(response.status, 404);
+  });
+});
+
+test('debug-log route requires the webhook bearer token even when capture is enabled', async () => {
+  const app = createApp({
+    database: { persistWebhookMessage: async () => undefined },
+    infobipWebhookToken: 'receiver-token',
+    captureUnmappedWebhookPayloads: true,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/webhooks/infobip/debug-log`);
+
+    assert.equal(response.status, 401);
+  });
+});
+
+test('debug-log route captures unmapped payloads in memory without persisting them', async () => {
+  const app = createApp({
+    database: { persistWebhookMessage: async () => undefined },
+    infobipWebhookToken: 'receiver-token',
+    captureUnmappedWebhookPayloads: true,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const unmappedPayload = { results: [{ messageId: 'unmapped-event' }] };
+
+    const postResponse = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer receiver-token',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(unmappedPayload),
+    });
+
+    assert.equal(postResponse.status, 202);
+
+    const debugResponse = await fetch(`${baseUrl}/webhooks/infobip/debug-log`, {
+      headers: { authorization: 'Bearer receiver-token' },
+    });
+
+    assert.equal(debugResponse.status, 200);
+    const body = await debugResponse.json();
+    assert.equal(body.capturedPayloads.length, 1);
+    assert.deepEqual(body.capturedPayloads[0].payload, unmappedPayload);
+  });
+});
+
 test('inbound webhook reports malformed JSON without exposing parser details', async () => {
   const app = createApp({
     database: { persistWebhookMessage: async () => undefined },
