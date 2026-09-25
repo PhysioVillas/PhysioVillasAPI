@@ -13,6 +13,7 @@ function createApp({
   whatsappSender,
   chatManagerApiToken,
   captureUnmappedWebhookPayloads = false,
+  allowUnauthenticatedInbound = false,
 } = {}) {
   const app = express();
 
@@ -26,6 +27,7 @@ function createApp({
     database,
     webhookToken: infobipWebhookToken,
     captureUnmappedPayloads: captureUnmappedWebhookPayloads,
+    allowUnauthenticatedInbound,
   }));
   app.use('/messages', createMessagesRouter({
     client: messagesClient,

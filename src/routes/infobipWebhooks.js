@@ -4,7 +4,12 @@ import { normalizeInfobipWebhookPayload } from '../services/infobipWebhookNormal
 
 const MAX_CAPTURED_PAYLOADS = 20;
 
-function createInfobipWebhooksRouter({ database, webhookToken, captureUnmappedPayloads = false } = {}) {
+function createInfobipWebhooksRouter({
+  database,
+  webhookToken,
+  captureUnmappedPayloads = false,
+  allowUnauthenticatedInbound = false,
+} = {}) {
   const router = Router();
   const capturedPayloads = [];
 
@@ -18,7 +23,12 @@ function createInfobipWebhooksRouter({ database, webhookToken, captureUnmappedPa
       });
     }
 
-    if (!hasExpectedBearerToken(request, webhookToken)) {
+    // TEMPORARY (SET-04 payload capture): Infobip's subscription UI only
+    // offers Basic/Hmac/OAuth, not a raw Bearer header, so the deployed
+    // subscription is unauthenticated while we capture the real
+    // smb_message_echoes payload. Revert this flag once the parser (API-02)
+    // is implemented and a compatible auth mechanism is configured.
+    if (!allowUnauthenticatedInbound && !hasExpectedBearerToken(request, webhookToken)) {
       return response.status(401).json({
         error: {
           code: 'UNAUTHORIZED_WEBHOOK',

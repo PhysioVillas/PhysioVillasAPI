@@ -26,6 +26,7 @@ const openApiDocument = {
     '/webhooks/infobip/inbound': {
       post: {
         summary: 'Recebe evento WhatsApp de entrada ou relatório de entrega da Infobip',
+        description: 'TEMPORÁRIO (captura de payload para SET-04): a subscription da Infobip não oferece Bearer bruto (só Básico/Hmac/OAuth), então esta rota está aceitando requisições sem autenticação em produção enquanto o payload real de smb_message_echoes não é capturado. Reverter para exigir o Bearer assim que o parser (API-02) estiver implementado.',
         security: [{ InfobipWebhookBearer: [] }],
         requestBody: {
           required: true,
