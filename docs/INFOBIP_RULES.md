@@ -1,6 +1,6 @@
 # Regras de Integração Infobip — evidências vigentes
 
-**Última atualização:** 2026-09-20
+**Última atualização:** 2026-09-25
 
 Este documento separa fatos observados na conta de teste das decisões de
 produção. Não registra chaves, URLs de conta, números de telefone, remetentes
@@ -118,6 +118,83 @@ Isso elimina a incerteza documental de formato, mas não prova a existência de
 um template PhysioVilas aprovado, a resposta de envio do tenant ou a entrega.
 Nenhum template foi criado, validado com dados reais ou enviado nesta revisão.
 
+## Evidência: eco de coexistência `smb_message_echoes` — capturado em 2026-09-25
+
+Em 2026-09-25, com a coexistência ativa no número de produção, uma mensagem
+enviada pelo WhatsApp Business App no celular vinculado chegou ao
+`POST /webhooks/infobip/inbound` e foi capturada pela rota temporária
+`GET /webhooks/infobip/debug-log`. Payload observado, com identificadores e
+números substituídos por marcadores:
+
+```json
+{
+  "entry": [{
+    "id": "<waba_id>",
+    "changes": [{
+      "value": {
+        "messagingProduct": "whatsapp",
+        "metadata": {
+          "displayPhoneNumber": "<numero_da_clinica>",
+          "phoneNumberId": "<phone_number_id>"
+        },
+        "contacts": [{ "waId": "<wa_id_paciente>", "userId": "<user_id>" }],
+        "messageEchoes": [{
+          "from": "<numero_da_clinica>",
+          "to": "<wa_id_paciente>",
+          "id": "wamid.<id>",
+          "toUserId": "<user_id>",
+          "timestamp": "<epoch_em_segundos>",
+          "text": { "body": "<texto>" },
+          "type": "text"
+        }]
+      },
+      "field": "smb_message_echoes"
+    }]
+  }]
+}
+```
+
+Estrutura confirmada:
+
+- O envelope é `entry[].changes[].value` (estilo Graph API da Meta), diferente
+  do `results[]` nativo da Infobip usado por inbound e relatórios de entrega.
+- O discriminador é `changes[].field === "smb_message_echoes"`. Um mesmo POST
+  pode trazer vários `entry`, `changes` e `messageEchoes`.
+- `messageEchoes[].from` é o número da clínica e `.to` é o paciente.
+- `id` vem no formato `wamid.*` e é usado como `infobip_message_id`
+  (idempotência por `on conflict do nothing`).
+- `timestamp` é uma string de epoch em segundos, não ISO 8601.
+- Não há nome de perfil nem status de entrega: é um eco de envio.
+- Existem `contacts[].userId` e `messageEchoes[].toUserId` (formato
+  `BR.<digitos>`); o schema atual não os armazena e nenhuma coluna foi criada.
+
+Implementação: `src/services/infobipWebhookNormalizer.js` detecta
+`payload.entry` antes do ramo `results[]` e devolve cada eco em
+`inboundMessages` com `direction: 'out'`, `sentVia: 'business_app'`,
+`status: 'sent'`, `waId` igual a `to` sem normalização e `createdAt`
+convertido do epoch. O router persiste pelo mesmo
+`database.persistWebhookMessage` já usado pelo inbound. Outros `field` dentro
+de `entry[].changes[]` (por exemplo, sincronização de histórico) são contados
+como `ignored` e respondidos com 202. A cobertura está em
+`test/infobipWebhooks.test.js`.
+
+Depois da captura, o bypass temporário `allowUnauthenticatedInbound` foi
+revertido: a rota volta a exigir o Bearer interno.
+
+### Limites do que foi validado
+
+- Somente eco do tipo `text` foi observado; outros tipos são aceitos com
+  `body` nulo, mas seus campos específicos não foram capturados.
+- **Divergência do nono dígito (pendente):** o `waId` do paciente veio sem o
+  nono dígito no eco de coexistência, enquanto o mesmo paciente apareceu com o
+  nono dígito em outro log de inbound. O backend grava os dois exatamente como
+  recebidos, o que pode gerar dois contatos para o mesmo paciente. Não há
+  normalização até haver evidência de qual formato a Infobip usa de forma
+  consistente.
+- Eventos de sincronização de histórico continuam sem payload capturado.
+- O eco foi recebido pela subscription configurada; não confirma se o inbound
+  da Messages API usa o mesmo envelope.
+
 ## Matriz de rastreabilidade
 
 | Regra | Estado | Evidência e implementação |
@@ -127,14 +204,15 @@ Nenhum template foi criado, validado com dados reais ou enviado nesta revisão.
 | Validação sem envio | Confirmado no tenant | `POST /messages-api/1/messages/validate` aceitou o contrato em 2026-09-19; `src/routes/messages.js` não expõe rota de disparo. |
 | Relatórios de entrega | Confirmado documentalmente e protegido localmente | `src/services/infobipWebhookNormalizer.js` mapeia `messageId`, `doneAt`, status e erro; `src/services/database.js` ignora atualização fora de ordem. |
 | Inbound comercial e formato do `wa_id` | Pendente | Requer payload real do remetente/WABA da clínica; o parser preserva `from` sem normalização até essa evidência. |
-| Segurança de subscription/webhook | Pendente | A rota exige Bearer interno em `src/routes/infobipWebhooks.js`; o mecanismo aceito pela subscription real ainda precisa ser confirmado. |
-| Coexistência e ecos do Business App | Pendente | Não há payload público reproduzível para `smb_message_echoes`; não tratar suposições como contrato. |
+| Segurança de subscription/webhook | Pendente | A rota exige Bearer interno em `src/routes/infobipWebhooks.js`; a tela de subscription real oferece apenas Básico, Hmac e OAuth, então o mecanismo permanente ainda precisa ser decidido. |
+| Coexistência e ecos do Business App | Confirmado no tenant | Payload real capturado em 2026-09-25; `src/services/infobipWebhookNormalizer.js` grava o eco como `direction: out`, `sent_via: business_app`, coberto por `test/infobipWebhooks.test.js`. Sincronização de histórico e a divergência do nono dígito continuam pendentes. |
 | Falha de janela de 24 horas e limite WhatsApp de `sendAt` | Pendente | Exigem resposta real controlada; a validação local só garante formato ISO futuro. |
 
 ## Pendências antes de implementar a integração
 
 - Confirmar resposta, `messageId` por destino e erros da Messages API.
-- Capturar payloads reais de inbound, status e coexistência.
+- Capturar payloads reais de inbound, status e sincronização de histórico
+  (o eco de coexistência já foi capturado em 2026-09-25).
 - Confirmar a autenticação do webhook e o formato de falha da janela de 24h.
 - Validar o limite de `sendAt` para WhatsApp.
 

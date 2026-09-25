@@ -23,11 +23,9 @@ function createInfobipWebhooksRouter({
       });
     }
 
-    // TEMPORARY (SET-04 payload capture): Infobip's subscription UI only
-    // offers Basic/Hmac/OAuth, not a raw Bearer header, so the deployed
-    // subscription is unauthenticated while we capture the real
-    // smb_message_echoes payload. Revert this flag once the parser (API-02)
-    // is implemented and a compatible auth mechanism is configured.
+    // allowUnauthenticatedInbound (default false) exists only for short,
+    // deliberate captures of unmapped payloads (used once for
+    // smb_message_echoes on 2026-09-25). Production keeps it disabled.
     if (!allowUnauthenticatedInbound && !hasExpectedBearerToken(request, webhookToken)) {
       return response.status(401).json({
         error: {
