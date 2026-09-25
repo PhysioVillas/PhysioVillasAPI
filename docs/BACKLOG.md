@@ -97,7 +97,7 @@ funcionando no mesmo número. A documentação pública (`PRD_PhysioVilas_WhatsA
 seção 4.3) indica suporte por Embedded Signup, mas não substitui uma validação
 na conta da clínica.
 
-- [ ] Onboarding de coexistência testado na conta real (Embedded Signup com
+- [x] Onboarding de coexistência testado na conta real (Embedded Signup com
       `featureType: whatsapp_business_app_onboarding`, ou fluxo pelo console)
 - [ ] Payload real do webhook `smb_message_echoes` capturado (mensagem
       enviada pelo celular gera esse evento)
