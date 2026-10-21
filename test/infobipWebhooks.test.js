@@ -253,6 +253,7 @@ test('inbound webhook normalizes a documented WhatsApp inbound event and persist
       direction: 'in',
       body: 'Preciso remarcar a consulta.',
       messageType: 'text',
+      replyId: null,
       status: 'received',
       createdAt: '2026-09-19T12:00:00.000+0000',
     },

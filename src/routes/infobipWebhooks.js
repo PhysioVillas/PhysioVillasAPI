@@ -4,9 +4,29 @@ import { normalizeInfobipWebhookPayload } from '../services/infobipWebhookNormal
 
 const MAX_CAPTURED_PAYLOADS = 20;
 
+// The inbound message is already persisted: a bot failure is logged and the
+// webhook still succeeds, because a retry would not trigger the bot again.
+async function replyWithFaqBot(faqBot, message) {
+  try {
+    await faqBot.handleInbound({
+      waId: message.waId,
+      messageType: message.messageType,
+      replyId: message.replyId,
+      body: message.body,
+    });
+  } catch (error) {
+    console.error('FAQ bot reply failed.', {
+      name: error?.name ?? 'Error',
+      upstreamStatus: error?.status,
+      details: error?.details,
+    });
+  }
+}
+
 function createInfobipWebhooksRouter({
   database,
   webhookToken,
+  faqBot,
   captureUnmappedPayloads = false,
   allowUnauthenticatedInbound = false,
 } = {}) {
@@ -39,7 +59,13 @@ function createInfobipWebhooksRouter({
       const { inboundMessages, deliveryReports, ignored } = normalizeInfobipWebhookPayload(request.body);
 
       for (const normalized of inboundMessages) {
-        await database.persistWebhookMessage(normalized);
+        const persisted = await database.persistWebhookMessage(normalized);
+
+        // Only a newly stored patient message triggers the bot, so an
+        // Infobip retry of the same messageId never sends a second reply.
+        if (faqBot !== undefined && normalized.message.direction === 'in' && persisted?.message) {
+          await replyWithFaqBot(faqBot, normalized.message);
+        }
       }
 
       for (const report of deliveryReports) {

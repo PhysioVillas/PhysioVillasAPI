@@ -90,6 +90,10 @@ fica presa no menu e nenhum dado além do necessário é coletado.
 
 ## AUT-03 — FAQ
 
+> **Atualização 2026-10-21:** o menu e o FAQ agora são executados pelo backend
+> (`src/services/faqBot.js`, conteúdo em `src/config/faqContent.js`), e não por
+> um Flow da Infobip. As regras abaixo continuam valendo para o conteúdo.
+
 O menu de dúvidas terá, inicialmente, tópicos institucionais: `horários`,
 `convênios`, `localização` e `serviços`. Cada resposta deve ser aprovada pela
 clínica antes da publicação; as imagens e o simulador antigo não comprovam que

@@ -66,3 +66,60 @@ test('runtime inbound webhook temporarily accepts unauthenticated requests until
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('runtime wires the FAQ bot as soon as database and Infobip sending are configured', async () => {
+  const sends = [];
+  const databaseOnly = {
+    DATABASE_URL: 'postgres://neon.example/chatmanager',
+    INFOBIP_WEBHOOK_TOKEN: 'receiver-token',
+  };
+  const fullyConfigured = {
+    ...databaseOnly,
+    INFOBIP_BASE_URL: 'https://tenant.example',
+    INFOBIP_API_KEY: 'secret',
+    INFOBIP_WHATSAPP_SENDER: 'clinic-sender',
+  };
+  const factories = {
+    createDatabaseFactory: () => ({
+      persistWebhookMessage: async () => ({ message: { id: 'stored' } }),
+      getFaqBotContext: async () => ({ lastBotMessageType: null, teamRepliedRecently: false }),
+      persistOutboundMessage: async () => ({ message: { id: 'stored' } }),
+    }),
+    createInfobipMessagesClientFactory: () => ({
+      sendWhatsAppInteractiveList: async (message) => {
+        sends.push(message);
+        return { messageId: `bot-${sends.length}` };
+      },
+    }),
+  };
+  const payload = {
+    results: [{
+      from: '5571999990000',
+      messageId: 'in-1',
+      receivedAt: '2026-10-21T12:00:00.000+0000',
+      message: { type: 'TEXT', text: 'Oi' },
+    }],
+  };
+
+  for (const env of [databaseOnly, fullyConfigured]) {
+    const { app } = createRuntimeApp({ env, ...factories });
+    const server = app.listen(0);
+
+    try {
+      await new Promise((resolve) => server.once('listening', resolve));
+      const response = await fetch(`http://127.0.0.1:${server.address().port}/webhooks/infobip/inbound`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      assert.equal(response.status, 200);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+
+  assert.equal(sends.length, 1);
+  assert.equal(sends[0].sender, 'clinic-sender');
+  assert.equal(sends[0].to, '5571999990000');
+});

@@ -32,8 +32,11 @@ function normalizeInboundResult(result) {
       infobipMessageId,
       waId,
       direction: 'in',
-      body: readNonEmptyString(message.text),
+      // Interactive replies carry no text: the clicked option title is kept
+      // as the body and its id (e.g. a FAQ row) as replyId.
+      body: readNonEmptyString(message.text) ?? readNonEmptyString(message.title),
       messageType: messageType.toLowerCase(),
+      replyId: readNonEmptyString(message.id),
       status: 'received',
       createdAt: readTimestamp(result.receivedAt),
     },
