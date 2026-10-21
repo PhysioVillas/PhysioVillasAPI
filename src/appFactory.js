@@ -11,6 +11,7 @@ function createApp({
   infobipWebhookToken,
   messagesClient,
   whatsappSender,
+  faqBot,
   chatManagerApiToken,
   captureUnmappedWebhookPayloads = false,
   allowUnauthenticatedInbound = false,
@@ -26,6 +27,7 @@ function createApp({
   app.use('/webhooks/infobip', createInfobipWebhooksRouter({
     database,
     webhookToken: infobipWebhookToken,
+    faqBot,
     captureUnmappedPayloads: captureUnmappedWebhookPayloads,
     allowUnauthenticatedInbound,
   }));

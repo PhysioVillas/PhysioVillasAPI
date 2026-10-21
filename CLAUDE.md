@@ -62,6 +62,21 @@ Routes:
 - `POST /messages/validate` — protected, validation-only endpoint for text and
   optional `sendAt`; there is no send route or real send implementation.
 
+### FAQ bot (exception to "no bot logic in code", added 2026-10-21)
+
+`src/services/faqBot.js` answers patient messages arriving at the inbound
+webhook: TEXT → main menu (interactive list), list option → FAQ answer with
+buttons or handoff text, `btn_voltar_menu`/`btn_atendente` buttons. Content
+lives in `src/config/faqContent.js` (answers marked `[PREENCHER]` still need
+clinic approval). These session replies use the **dedicated WhatsApp API**
+(`/whatsapp/1/message/text|interactive/list|interactive/buttons`), not the
+Messages API, so the API key needs a WhatsApp send scope. There are no bot
+env vars: the bot answers every contact whenever `DATABASE_URL` and the
+Infobip send config exist (the system has no real patients yet). It stays
+silent on text for 12 h (`HANDOFF_SILENCE_HOURS`) after a handoff or a team
+reply from the Business App; the keyword `MENU` always brings the menu back. Replies are stored with `message_type` `faq_menu`,
+`faq_answer` or `faq_handoff`, and set `conversations.current_intent`.
+
 ### Schema is a public interface
 
 Power BI reads directly from the Neon tables — there's no API layer in

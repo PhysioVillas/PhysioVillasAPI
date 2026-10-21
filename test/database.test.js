@@ -338,6 +338,73 @@ test('persistOutboundMessage atomically saves a successful API receipt for deliv
   assert.equal(calls[5], 'release');
 });
 
+test('persistOutboundMessage records the FAQ bot conversation intent in the same transaction', async () => {
+  const calls = [];
+  const client = {
+    query: async (query) => {
+      calls.push(query);
+
+      if (typeof query === 'string') {
+        return { rows: [] };
+      }
+
+      return {
+        rows: [
+          query.text.includes('insert into conversations')
+            ? { id: 'conversation-id', wa_id: 'contact-id', status: 'open' }
+            : { id: 'row-id' },
+        ],
+      };
+    },
+    release: () => calls.push('release'),
+  };
+  const database = createDatabase({ pool: { connect: async () => client } });
+
+  const result = await database.persistOutboundMessage({
+    infobipMessageId: 'bot-id',
+    waId: 'contact-id',
+    body: 'Certo! Uma pessoa da equipe vai continuar.',
+    messageType: 'faq_handoff',
+    conversationIntent: 'human_handoff',
+  });
+
+  assert.match(calls[3].text, /update conversations set current_intent/i);
+  assert.deepEqual(calls[3].values, ['conversation-id', 'human_handoff']);
+  assert.match(calls[4].text, /insert into messages/i);
+  assert.equal(calls[4].values[6], 'faq_handoff');
+  assert.equal(calls[5], 'commit');
+  assert.equal(result.conversation.current_intent, 'human_handoff');
+  await assert.rejects(
+    database.persistOutboundMessage({
+      infobipMessageId: 'bot-id',
+      waId: 'contact-id',
+      body: 'x',
+      conversationIntent: 'not-an-intent',
+    }),
+    /conversationIntent/,
+  );
+});
+
+test('getFaqBotContext reads the latest bot message and recent team replies in one query', async () => {
+  const queries = [];
+  const database = createDatabase({
+    pool: {
+      query: async (query) => {
+        queries.push(query);
+        return { rows: [{ last_bot_message_type: 'faq_handoff', team_replied_recently: false }] };
+      },
+    },
+  });
+
+  const context = await database.getFaqBotContext('contact-id', { windowHours: 12 });
+
+  assert.deepEqual(context, { lastBotMessageType: 'faq_handoff', teamRepliedRecently: false });
+  assert.deepEqual(queries[0].values, ['contact-id', 12]);
+  assert.match(queries[0].text, /sent_via = 'business_app'/);
+  assert.match(queries[0].text, /message_type in \('faq_menu', 'faq_answer', 'faq_handoff'\)/);
+  await assert.rejects(database.getFaqBotContext('', { windowHours: 12 }), /waId is required/);
+});
+
 test('persistOutboundMessage rejects incomplete receipts before opening a database transaction', async () => {
   const database = createDatabase({
     pool: {

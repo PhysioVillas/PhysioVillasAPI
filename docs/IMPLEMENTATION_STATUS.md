@@ -2,6 +2,32 @@
 
 **Data do registro:** 2026-09-20
 
+## Atualização — 2026-10-21: bot de FAQ no backend
+
+Por decisão do time, o FAQ/autoatendimento passou a ser executado pelo
+backend, e não por um Flow da Infobip. O webhook existente
+`POST /webhooks/infobip/inbound` aciona `src/services/faqBot.js` para cada
+mensagem nova de paciente (retentativas do mesmo `messageId` não geram uma
+segunda resposta):
+
+- texto → menu principal em lista interativa (`/whatsapp/1/message/interactive/list`);
+- opção de dúvida frequente → resposta com os botões "Voltar ao menu" e
+  "Falar com a equipe" (`/whatsapp/1/message/interactive/buttons`);
+- "Agendar ou remarcar", "Sou paciente novo" e "Falar com a equipe" → texto de
+  encaminhamento (`/whatsapp/1/message/text`); depois disso, e depois de uma
+  resposta da equipe pelo WhatsApp Business App, o bot não responde a textos
+  do contato por 12 h, salvo a palavra `MENU`.
+
+O bot não tem variáveis de ambiente próprias: como o sistema ainda não atende
+pacientes reais, ele responde a qualquer contato sempre que `DATABASE_URL` e a
+configuração de envio Infobip existirem. Os limites de tamanho do WhatsApp
+são validados localmente antes da chamada. As respostas de
+`src/config/faqContent.js` marcadas com `[PREENCHER]` ainda dependem de
+aprovação da clínica antes de o número receber pacientes. Formato real de
+`INTERACTIVE_LIST_REPLY` e `INTERACTIVE_BUTTON_REPLY` e o escopo de chave
+exigido pela API WhatsApp dedicada ainda não foram verificados na conta.
+`npm test`: 97 testes.
+
 ## Atualização — 2026-09-23
 
 O SCRUM-25 foi integrado à `main` pela PR #1 (merge commit `c1a1e2f`). O

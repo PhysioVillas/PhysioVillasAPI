@@ -2,6 +2,9 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
+// Mirrors the conversations.current_intent check constraint (migration 003).
+const CONVERSATION_INTENTS = new Set(['faq', 'triage', 'scheduling', 'human_handoff', 'unknown']);
+
 function requireConnectionString(connectionString) {
   if (typeof connectionString !== 'string' || connectionString.trim() === '') {
     throw new TypeError('DATABASE_URL is required.');
@@ -236,9 +239,14 @@ function createDatabase({ connectionString, pool } = {}) {
     messageType = 'text',
     status = 'accepted',
     createdAt = null,
+    conversationIntent = null,
   }) {
     if (!infobipMessageId) {
       throw new TypeError('infobipMessageId is required.');
+    }
+
+    if (conversationIntent !== null && !CONVERSATION_INTENTS.has(conversationIntent)) {
+      throw new TypeError('conversationIntent is not a known conversation intent.');
     }
 
     if (!waId) {
@@ -261,6 +269,15 @@ function createDatabase({ connectionString, pool } = {}) {
         waId,
         lastMessageAt: createdAt,
       });
+
+      if (conversationIntent !== null) {
+        await client.query({
+          text: 'update conversations set current_intent = $2 where id = $1',
+          values: [conversation.id, conversationIntent],
+        });
+        conversation.current_intent = conversationIntent;
+      }
+
       const message = await insertMessageWith(client, {
         infobipMessageId,
         waId,
@@ -283,7 +300,49 @@ function createDatabase({ connectionString, pool } = {}) {
     }
   }
 
+  // What the FAQ bot needs to decide whether to stay silent for a contact:
+  // the type of its own latest message and whether the clinic team replied
+  // from the WhatsApp Business App, both within the last `windowHours`.
+  async function getFaqBotContext(waId, { windowHours }) {
+    if (!waId) {
+      throw new TypeError('waId is required.');
+    }
+
+    const result = await resolvedPool.query({
+      text: `
+        select
+          (
+            select message_type
+            from messages
+            where wa_id = $1
+              and direction = 'out'
+              and sent_via = 'api'
+              and message_type in ('faq_menu', 'faq_answer', 'faq_handoff')
+              and created_at > now() - make_interval(hours => $2)
+            order by created_at desc
+            limit 1
+          ) as last_bot_message_type,
+          exists (
+            select 1
+            from messages
+            where wa_id = $1
+              and direction = 'out'
+              and sent_via = 'business_app'
+              and created_at > now() - make_interval(hours => $2)
+          ) as team_replied_recently
+      `,
+      values: [waId, windowHours],
+    });
+    const row = result.rows[0];
+
+    return {
+      lastBotMessageType: row?.last_bot_message_type ?? null,
+      teamRepliedRecently: row?.team_replied_recently === true,
+    };
+  }
+
   return {
+    getFaqBotContext,
     insertMessage,
     persistOutboundMessage,
     persistWebhookMessage,
