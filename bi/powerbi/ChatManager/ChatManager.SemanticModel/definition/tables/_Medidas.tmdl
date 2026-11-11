@@ -33,7 +33,7 @@ table _Medidas
 		formatString: #,0
 		lineageTag: 7f3ef440-9750-4d2c-8022-c347a9a05e97
 
-	measure 'Intenção de agendamento' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] = "menu_agendar" ), 0 )
+	measure 'Seleções em Agendar/Remarcar' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] = "menu_agendar" ), 0 )
 		formatString: #,0
 		lineageTag: e1a8d54a-bf39-4061-bd60-ab74a4934582
 

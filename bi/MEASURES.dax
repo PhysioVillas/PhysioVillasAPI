@@ -30,7 +30,7 @@ COALESCE ( CALCULATE (
     DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected"
 ), 0 )
 
-Intenção de agendamento =
+Seleções em Agendar/Remarcar =
 COALESCE (
     CALCULATE (
         [Opções do menu selecionadas],

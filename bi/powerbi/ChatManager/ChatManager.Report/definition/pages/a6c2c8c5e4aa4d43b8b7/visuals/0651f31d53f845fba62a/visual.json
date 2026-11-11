@@ -23,11 +23,11 @@
                       "Entity": "_Medidas"
                     }
                   },
-                  "Property": "Intenção de agendamento"
+                  "Property": "Seleções em Agendar/Remarcar"
                 }
               },
-              "queryRef": "_Medidas.Intenção de agendamento",
-              "nativeQueryRef": "Intenção de agendamento"
+              "queryRef": "_Medidas.Seleções em Agendar/Remarcar",
+              "nativeQueryRef": "Seleções em Agendar/Remarcar"
             }
           ]
         }

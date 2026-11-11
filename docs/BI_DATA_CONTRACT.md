@@ -31,8 +31,9 @@ IDs arbitrários recebidos do WhatsApp.
 - `team_message_sent`: mensagem de saída recebida como eco do WhatsApp Business
   App no fluxo de coexistência.
 
-`menu_agendar` é apenas uma escolha/intenção de contato. Não demonstra que um
-horário foi reservado. O sistema ainda não possui agenda, disponibilidade,
+`menu_agendar` registra a seleção da opção “Agendar/Remarcar”. Isso não
+demonstra que a equipe marcou a consulta nem que o paciente confirmou um
+horário. O sistema ainda não possui agenda, disponibilidade,
 consulta confirmada, comparecimento ou cancelamento. Esses indicadores só
 devem ser adicionados quando houver uma fonte de agenda e eventos de ciclo de
 vida confiáveis.
