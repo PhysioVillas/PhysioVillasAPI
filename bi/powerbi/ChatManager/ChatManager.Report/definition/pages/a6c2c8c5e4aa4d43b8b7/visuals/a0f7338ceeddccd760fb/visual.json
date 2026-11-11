@@ -1,0 +1,157 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "a0f7338ceeddccd760fb",
+  "position": {
+    "x": 16,
+    "y": 228,
+    "width": 816,
+    "height": 476,
+    "z": 22816,
+    "tabOrder": 22816
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DailyWhatsAppFlowMetrics"
+                    }
+                  },
+                  "Property": "activity_date"
+                }
+              },
+              "queryRef": "DailyWhatsAppFlowMetrics.activity_date",
+              "nativeQueryRef": "activity_date"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Opções do menu selecionadas"
+                }
+              },
+              "queryRef": "_Medidas.Opções do menu selecionadas",
+              "nativeQueryRef": "Opções do menu selecionadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Respostas automáticas observadas"
+                }
+              },
+              "queryRef": "_Medidas.Respostas automáticas observadas",
+              "nativeQueryRef": "Respostas automáticas observadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Respostas da equipe observadas"
+                }
+              },
+              "queryRef": "_Medidas.Respostas da equipe observadas",
+              "nativeQueryRef": "Respostas da equipe observadas"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "DailyWhatsAppFlowMetrics"
+                  }
+                },
+                "Property": "activity_date"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Atividade diária por etapa do fluxo'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

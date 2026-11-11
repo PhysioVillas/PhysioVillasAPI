@@ -1,0 +1,47 @@
+table _Medidas
+
+	measure Mensagens = SUM ( DailyMessageMetrics[message_count] )
+		formatString: #,0
+
+	measure 'Mensagens recebidas' = CALCULATE ( [Mensagens], DailyMessageMetrics[direction] = "in" )
+		formatString: #,0
+
+	measure 'Mensagens enviadas' = CALCULATE ( [Mensagens], DailyMessageMetrics[direction] = "out" )
+		formatString: #,0
+
+	measure 'Mensagens com erro' = CALCULATE ( SUM ( DailyMessageMetrics[error_count] ), DailyMessageMetrics[direction] = "out" )
+		formatString: #,0
+
+	measure 'Taxa de erro de envio' = DIVIDE ( [Mensagens com erro], [Mensagens enviadas] )
+		formatString: 0.0%
+
+	measure 'Eventos de fluxo' = SUM ( DailyWhatsAppFlowMetrics[event_count] )
+		formatString: #,0
+
+	measure 'Mensagens recebidas no fluxo' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "message_received" )
+		formatString: #,0
+
+	measure 'Opções do menu selecionadas' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected" )
+		formatString: #,0
+
+	measure 'Intenção de agendamento' = CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] = "menu_agendar" )
+		formatString: #,0
+
+	measure 'Respostas automáticas observadas' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent" )
+		formatString: #,0
+
+	measure 'Encaminhamentos enviados pelo bot' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent", DailyWhatsAppFlowMetrics[step_key] = "faq_handoff" )
+		formatString: #,0
+
+	measure 'Respostas da equipe observadas' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "team_message_sent" )
+		formatString: #,0
+
+	column Coluna
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: [Coluna]
+
+	partition _Medidas = calculated
+		mode: import
+		source = ROW ( "Coluna", BLANK () )

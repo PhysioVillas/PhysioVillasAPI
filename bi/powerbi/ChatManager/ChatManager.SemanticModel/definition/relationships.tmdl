@@ -1,0 +1,7 @@
+relationship DailyMessageMetrics_activity_date_DimDate
+	fromColumn: DailyMessageMetrics.activity_date
+	toColumn: DimDate.activity_date
+
+relationship DailyWhatsAppFlowMetrics_activity_date_DimDate
+	fromColumn: DailyWhatsAppFlowMetrics.activity_date
+	toColumn: DimDate.activity_date

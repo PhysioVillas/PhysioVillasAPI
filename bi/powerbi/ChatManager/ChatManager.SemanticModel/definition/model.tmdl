@@ -1,0 +1,14 @@
+model ChatManagerBI
+	culture: pt-BR
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: pt-BR
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+	annotation __PBI_TimeIntelligenceEnabled = 0
+
+ref table DailyMessageMetrics
+ref table DailyWhatsAppFlowMetrics
+ref table DimDate
+ref table _Medidas

@@ -16,15 +16,17 @@ CALCULATE (
 Taxa de erro de envio = DIVIDE ( [Mensagens com erro], [Mensagens enviadas] )
 
 -- Tabela: DailyWhatsAppFlowMetrics
+Eventos de fluxo = SUM ( DailyWhatsAppFlowMetrics[event_count] )
+
 Mensagens recebidas no fluxo =
 CALCULATE (
-    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "message_received"
 )
 
 Opções do menu selecionadas =
 CALCULATE (
-    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected"
 )
 
@@ -37,13 +39,19 @@ CALCULATE (
 
 Encaminhamentos enviados pelo bot =
 CALCULATE (
-    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent",
     DailyWhatsAppFlowMetrics[step_key] = "faq_handoff"
 )
 
+Respostas automáticas observadas =
+CALCULATE (
+    [Eventos de fluxo],
+    DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent"
+)
+
 Respostas da equipe observadas =
 CALCULATE (
-    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "team_message_sent"
 )

@@ -1,0 +1,3 @@
+expression NeonServer = "SEU_ENDPOINT_POOLED_NEON:5432" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression NeonDatabase = "neondb" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
