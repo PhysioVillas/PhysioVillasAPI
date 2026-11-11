@@ -14,9 +14,9 @@ na inicialização da API ou no deploy.
 
 Alternativamente, execute no console SQL do Neon, em ordem, os arquivos
 `migrations/001_initial_schema.sql` a
-`migrations/005_active_conversations.sql`. Depois, `GET /health/ready` deve
-confirmar tabelas operacionais, a conversa ativa por contato, a visão analítica
-e a coluna de entrega antes de liberar o webhook em um preview.
+`migrations/007_whatsapp_flow_reporting.sql`. Depois, `GET /health/ready` deve
+confirmar tabelas operacionais, a conversa ativa por contato, as visões
+analíticas e a coluna de entrega antes de liberar o webhook em um preview.
 
 Não registre a URL de conexão, usuários, senhas, números de telefone ou chaves
 de API neste repositório.
@@ -39,4 +39,6 @@ devem ser criadas pelo administrador fora do repositório e em operação
 explicitamente autorizada.
 
 O mapa de módulos, limites de dados e extensões planejadas está em
-[`DATA_MODEL.md`](DATA_MODEL.md).
+[`DATA_MODEL.md`](DATA_MODEL.md). O contrato do BI, a semântica das novas
+métricas e os limites do modelo PBIP de exemplo estão em
+[`../docs/BI_DATA_CONTRACT.md`](../docs/BI_DATA_CONTRACT.md).

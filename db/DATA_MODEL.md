@@ -49,15 +49,26 @@ mensagem real foi enviada por estes testes locais.
 
 ## Módulo analítico (`reporting`)
 
-`reporting.daily_message_metrics` é a primeira interface estável para o Power
-BI. Ela agrega por dia UTC, direção, origem, tipo e status, expondo somente:
+`reporting.daily_message_metrics` agrega por dia UTC, direção, origem, tipo e
+status. `reporting.daily_whatsapp_flow_metrics` agrega eventos do menu e
+autoatendimento por dia UTC, tipo de evento, etapa permitida e origem, expondo
+somente:
 
 - quantidade de mensagens;
 - quantidade com código de erro;
 - dimensões operacionais para filtro.
+- quantidade de eventos de fluxo e conversas distintas observadas.
 
 Ela não expõe `body`, `profile_name` nem `wa_id`. O Power BI recebe acesso ao
 schema `reporting`, não às tabelas operacionais em `public`.
+
+A trilha `whatsapp_flow_events` é gravada na transação da mensagem e tem chave
+única por mensagem e tipo de evento, portanto reentregas não duplicam o funil.
+Ela conta mensagens recebidas, opções interativas reconhecidas, passos do bot
+enviados e respostas observadas pelo WhatsApp Business App. IDs de etapa são
+permitidos pelo próprio catálogo do bot; IDs desconhecidos não viram dimensão
+analítica. Consulte [`../docs/BI_DATA_CONTRACT.md`](../docs/BI_DATA_CONTRACT.md)
+para o significado dos indicadores e as limitações do modelo PBIP de exemplo.
 
 ## Sequência de migrações
 
@@ -70,6 +81,10 @@ schema `reporting`, não às tabelas operacionais em `public`.
 5. `005_active_conversations.sql` garante no máximo uma conversa aberta por
    contato, para que cada evento recebido possa ser ligado ao atendimento
    operacional ativo sem criar registros de triagem.
+6. `006_operational_lifecycle.sql` acrescenta ciclo de vida de despachos e
+   auditoria operacional.
+7. `007_whatsapp_flow_reporting.sql` registra eventos mínimos do fluxo e cria
+   a visão agregada diária para o BI.
 
 As migrações são aplicadas pelo administrador do Neon, em ordem, com uma
 conexão SSL. Elas não criam uma conta, banco externo, usuário ou senha.
@@ -84,11 +99,11 @@ conexão SSL. Elas não criam uma conta, banco externo, usuário ou senha.
   versionadas;
 - payloads brutos de webhook.
 
-## Próximas extensões, somente com evidência da Infobip
+## Próximas extensões, somente com fonte operacional confirmada
 
 | Necessidade | Mudança futura | Condição para executar |
 |---|---|---|
-| Relatório de entrega por etapa | histórico de eventos de status | capturar o payload real e confirmar sua semântica |
-| Métricas de template | identificador/nome do template sem parâmetros pessoais | confirmar o contrato da Messages API |
+| Relatório de entrega por etapa | histórico de eventos de status | confirmar semântica e transições do provedor |
+| Métricas de template | identificador/nome do template sem parâmetros pessoais | confirmar o contrato da API de mensagens |
 | Lembretes | referência externa de consulta e horário programado | definir integração de agenda e política operacional |
 | Retenção | política de exclusão/anonimização | decisão da clínica e obrigação aplicável |

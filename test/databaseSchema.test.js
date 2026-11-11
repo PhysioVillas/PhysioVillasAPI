@@ -6,6 +6,7 @@ const schemaPath = new URL('../db/migrations/001_initial_schema.sql', import.met
 const reportingSchemaPath = new URL('../db/migrations/002_reporting_views.sql', import.meta.url);
 const deliveryStatusSchemaPath = new URL('../db/migrations/004_message_delivery_status.sql', import.meta.url);
 const activeConversationSchemaPath = new URL('../db/migrations/005_active_conversations.sql', import.meta.url);
+const flowReportingSchemaPath = new URL('../db/migrations/007_whatsapp_flow_reporting.sql', import.meta.url);
 
 test('initial database migration preserves the reporting and webhook invariants', async () => {
   const schema = await readFile(schemaPath, 'utf8');
@@ -47,4 +48,15 @@ test('active-conversation migration allows only one open operational conversatio
   assert.match(schema, /where status = 'open' and wa_id is not null/i);
   const sqlWithoutComments = schema.replace(/^--.*$/gm, '');
   assert.doesNotMatch(sqlWithoutComments, /body|triage|diagnos/i);
+});
+
+test('WhatsApp flow reporting migration is deduplicated and exposes aggregate fields only', async () => {
+  const schema = await readFile(flowReportingSchemaPath, 'utf8');
+
+  assert.match(schema, /create table if not exists whatsapp_flow_events/i);
+  assert.match(schema, /unique \(message_id, event_type\)/i);
+  assert.match(schema, /create or replace view reporting\.daily_whatsapp_flow_metrics/i);
+  assert.match(schema, /count\(distinct conversation_id\) as conversation_count/i);
+  assert.match(schema, /'menu_agendar'.*'menu_paciente_novo'.*'menu_atendente'/s);
+  assert.doesNotMatch(schema.replace(/^--.*$/gm, ''), /\b(body|wa_id|profile_name|payload)\b/i);
 });
