@@ -27,3 +27,6 @@ Thumbs.db
 .vscode/
 .idea/
 .vercel
+
+# Power BI Desktop local cache and settings (not part of the shared PBIP)
+bi/powerbi/**/.pbi/

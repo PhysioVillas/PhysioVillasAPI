@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "a0f7338ceeddccd760fb",
   "position": {
     "x": 16,
     "y": 228,
-    "width": 816,
-    "height": 476,
     "z": 22816,
+    "height": 476,
+    "width": 816,
     "tabOrder": 22816
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "DailyWhatsAppFlowMetrics.activity_date",
-              "nativeQueryRef": "activity_date"
+              "nativeQueryRef": "activity_date",
+              "active": true
             }
           ]
         },

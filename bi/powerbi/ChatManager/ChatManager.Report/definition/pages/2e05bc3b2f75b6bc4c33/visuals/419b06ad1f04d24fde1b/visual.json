@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "419b06ad1f04d24fde1b",
   "position": {
     "x": 1056,
     "y": 8,
-    "width": 208,
-    "height": 80,
     "z": 1856,
+    "height": 80,
+    "width": 208,
     "tabOrder": 1856
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "DimDate.year_month",
-              "nativeQueryRef": "year_month"
+              "nativeQueryRef": "year_month",
+              "active": true
             }
           ]
         }
@@ -60,7 +61,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Serviço'"
+                  "Value": "'Ano-mês'"
                 }
               }
             }

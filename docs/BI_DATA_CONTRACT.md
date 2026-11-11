@@ -37,6 +37,12 @@ consulta confirmada, comparecimento ou cancelamento. Esses indicadores só
 devem ser adicionados quando houver uma fonte de agenda e eventos de ciclo de
 vida confiáveis.
 
+O cartão `Seleções com encaminhamento à equipe` conta eventos de seleção das
+opções `menu_agendar`, `menu_paciente_novo`, `menu_atendente` e
+`btn_atendente`. É uma contagem de interações registradas, não de pessoas
+únicas nem de atendimentos concluídos. Leia junto com `Encaminhamentos enviados
+pelo bot`; os dois indicadores representam etapas distintas.
+
 ## Indicadores que ainda não têm fonte
 
 O banco atual não sustenta consultas marcadas/realizadas/canceladas, capacidade

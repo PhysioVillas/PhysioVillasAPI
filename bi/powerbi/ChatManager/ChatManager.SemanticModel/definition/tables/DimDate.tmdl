@@ -1,10 +1,12 @@
 table DimDate
+	lineageTag: 7c87fb1c-c2f6-44fa-8d2e-89e614b4965d
 	dataCategory: Time
 
 	column activity_date
 		dataType: dateTime
-		formatString: dd/MM/yyyy
 		isKey
+		formatString: dd/MM/yyyy
+		lineageTag: 887bc554-31fe-42ba-85dd-48939894ffb9
 		summarizeBy: none
 		sourceColumn: activity_date
 
@@ -13,19 +15,22 @@ table DimDate
 	column year
 		dataType: int64
 		formatString: 0
+		lineageTag: 7a888e74-fa1d-47cf-b23a-f64975048ab4
 		summarizeBy: none
 		sourceColumn: year
 
 	column year_month
 		dataType: string
+		lineageTag: 519e44fc-825f-4ab6-95a5-634b0809e40b
 		summarizeBy: none
 		sourceColumn: year_month
 		sortByColumn: year_month_order
 
 	column year_month_order
 		dataType: int64
-		formatString: 0
 		isHidden
+		formatString: 0
+		lineageTag: 8a6b15b9-8c42-4eb3-9d0c-d174c7cc830e
 		summarizeBy: none
 		sourceColumn: year_month_order
 

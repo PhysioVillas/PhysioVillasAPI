@@ -6,7 +6,11 @@ model ChatManagerBI
 		legacyRedirects
 		returnErrorValuesAsNull
 
-	annotation __PBI_TimeIntelligenceEnabled = 0
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["DailyMessageMetrics","DailyWhatsAppFlowMetrics","DimDate","NeonServer","NeonDatabase"]
+
+annotation PBI_ProTooling = ["DevMode"]
 
 ref table DailyMessageMetrics
 ref table DailyWhatsAppFlowMetrics

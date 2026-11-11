@@ -20,10 +20,36 @@ modelo e também estão documentadas em [`MEASURES.dax`](MEASURES.dax).
 não deve ser somada entre eventos. O significado/limite de cada indicador está
 em [`../docs/BI_DATA_CONTRACT.md`](../docs/BI_DATA_CONTRACT.md).
 
-O arquivo `ClinicaFisio_PowerBI_v5.zip` é uma referência visual baseada em
-dados fictícios e caminhos locais. Não use a planilha como fonte de produção
-nem misture suas tabelas no modelo. Ainda não há fonte para agenda, consultas
+O arquivo `ClinicaFisio_PowerBI_v5.zip` contém sete páginas de referência
+visual, baseadas em dados fictícios e uma planilha local. O relatório do
+ChatManager mantém duas páginas, pois somente mensagens e eventos observados no
+fluxo têm fonte real hoje. As páginas simuladas de agenda, faltas, ocupação,
+financeiro e campanhas podem orientar o design futuro, mas não devem ser
+ligadas a mensagens nem misturadas no modelo atual. Ainda não há fonte para
+agenda, consultas
 concluídas/canceladas, capacidade, cobrança, convênios ou campanhas. O evento
 `menu_agendar` representa intenção de contato e não confirmação de consulta.
 As métricas do fluxo só aparecem após os eventos correspondentes chegarem e o
 modelo ser atualizado.
+
+## Uso pela equipe
+
+O relatório publicado atualmente está em **Meu workspace**, associado à conta
+que o publicou. Isso serve para demonstração individual, mas não é um espaço
+de propriedade da clínica. Para uso continuado pela empresa, a clínica deve
+usar um tenant Microsoft 365 controlado por ela, publicar o projeto em um
+workspace da organização e conceder acesso nominativo somente às pessoas que
+precisam visualizar ou editar. Não use **Publicar na Web**: esse recurso torna
+o relatório e os dados subjacentes acessíveis a qualquer pessoa na Internet.
+
+O compartilhamento organizacional exige licenças compatíveis para quem publica
+e para os leitores; usuários gratuitos só conseguem consumir conteúdo
+compartilhado quando o workspace está em capacidade Fabric/Premium adequada.
+O período de avaliação mostrado no serviço não deve ser considerado licença
+permanente. Confirmar a licença do tenant antes de organizar o acesso da equipe.
+
+Para manter o relatório atualizado, configure no Power BI Service as
+credenciais do usuário PostgreSQL somente leitura e uma agenda de atualização
+do modelo semântico. A conexão ao Neon é uma fonte de nuvem e deve ser validada
+por uma atualização concluída e pelo histórico de atualização. Não colocar a
+senha no PBIP nem neste repositório.

@@ -16,42 +16,55 @@ CALCULATE (
 Taxa de erro de envio = DIVIDE ( [Mensagens com erro], [Mensagens enviadas] )
 
 -- Tabela: DailyWhatsAppFlowMetrics
-Eventos de fluxo = SUM ( DailyWhatsAppFlowMetrics[event_count] )
+Eventos de fluxo = COALESCE ( SUM ( DailyWhatsAppFlowMetrics[event_count] ), 0 )
 
 Mensagens recebidas no fluxo =
-CALCULATE (
+COALESCE ( CALCULATE (
     [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "message_received"
-)
+), 0 )
 
 Opções do menu selecionadas =
-CALCULATE (
+COALESCE ( CALCULATE (
     [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected"
-)
+), 0 )
 
 Intenção de agendamento =
-CALCULATE (
-    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
-    DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected",
-    DailyWhatsAppFlowMetrics[step_key] = "menu_agendar"
+COALESCE (
+    CALCULATE (
+        [Opções do menu selecionadas],
+        DailyWhatsAppFlowMetrics[step_key] = "menu_agendar"
+    ),
+    0
+)
+
+Seleções com encaminhamento à equipe =
+COALESCE (
+    CALCULATE (
+        [Opções do menu selecionadas],
+        DailyWhatsAppFlowMetrics[step_key] IN {
+            "menu_agendar", "menu_paciente_novo", "menu_atendente", "btn_atendente"
+        }
+    ),
+    0
 )
 
 Encaminhamentos enviados pelo bot =
-CALCULATE (
+COALESCE ( CALCULATE (
     [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent",
     DailyWhatsAppFlowMetrics[step_key] = "faq_handoff"
-)
+), 0 )
 
 Respostas automáticas observadas =
-CALCULATE (
+COALESCE ( CALCULATE (
     [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent"
-)
+), 0 )
 
 Respostas da equipe observadas =
-CALCULATE (
+COALESCE ( CALCULATE (
     [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "team_message_sent"
-)
+), 0 )

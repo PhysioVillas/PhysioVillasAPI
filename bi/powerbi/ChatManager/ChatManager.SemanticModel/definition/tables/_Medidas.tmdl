@@ -1,44 +1,69 @@
 table _Medidas
+	lineageTag: 483729d7-2803-4cab-b359-c95a06125d6d
 
 	measure Mensagens = SUM ( DailyMessageMetrics[message_count] )
 		formatString: #,0
+		lineageTag: 96a2e270-ce42-48fb-8469-dd9e479cfa53
 
 	measure 'Mensagens recebidas' = CALCULATE ( [Mensagens], DailyMessageMetrics[direction] = "in" )
 		formatString: #,0
+		lineageTag: c601eafb-608b-4330-9a77-aa087652a730
 
 	measure 'Mensagens enviadas' = CALCULATE ( [Mensagens], DailyMessageMetrics[direction] = "out" )
 		formatString: #,0
+		lineageTag: ea1788c3-ebe6-4c0d-8e24-989f2bc0d721
 
 	measure 'Mensagens com erro' = CALCULATE ( SUM ( DailyMessageMetrics[error_count] ), DailyMessageMetrics[direction] = "out" )
 		formatString: #,0
+		lineageTag: 56960d0c-d8ce-4564-bf29-de708e822925
 
 	measure 'Taxa de erro de envio' = DIVIDE ( [Mensagens com erro], [Mensagens enviadas] )
 		formatString: 0.0%
+		lineageTag: 498be8ee-2e0f-4c61-9a6f-11539ef841f5
 
-	measure 'Eventos de fluxo' = SUM ( DailyWhatsAppFlowMetrics[event_count] )
+	measure 'Eventos de fluxo' = COALESCE ( SUM ( DailyWhatsAppFlowMetrics[event_count] ), 0 )
 		formatString: #,0
+		lineageTag: c333c655-f425-434e-8ea5-531212063d50
 
-	measure 'Mensagens recebidas no fluxo' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "message_received" )
+	measure 'Mensagens recebidas no fluxo' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "message_received" ), 0 )
 		formatString: #,0
+		lineageTag: 1dd7104d-a061-4056-9b74-05becbc9336d
 
-	measure 'Opções do menu selecionadas' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected" )
+	measure 'Opções do menu selecionadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected" ), 0 )
 		formatString: #,0
+		lineageTag: 7f3ef440-9750-4d2c-8022-c347a9a05e97
 
-	measure 'Intenção de agendamento' = CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] = "menu_agendar" )
+	measure 'Intenção de agendamento' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] = "menu_agendar" ), 0 )
 		formatString: #,0
+		lineageTag: e1a8d54a-bf39-4061-bd60-ab74a4934582
 
-	measure 'Respostas automáticas observadas' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent" )
+	measure 'Seleções com encaminhamento à equipe' =
+		COALESCE (
+			CALCULATE (
+				[Opções do menu selecionadas],
+				DailyWhatsAppFlowMetrics[step_key] IN { "menu_agendar", "menu_paciente_novo", "menu_atendente", "btn_atendente" }
+			),
+			0
+		)
 		formatString: #,0
+		lineageTag: cff24b19-41f7-49e8-a535-01d0e72041a1
 
-	measure 'Encaminhamentos enviados pelo bot' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent", DailyWhatsAppFlowMetrics[step_key] = "faq_handoff" )
+	measure 'Respostas automáticas observadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent" ), 0 )
 		formatString: #,0
+		lineageTag: 4d103210-300a-42b2-82a2-8f6001e320da
 
-	measure 'Respostas da equipe observadas' = CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "team_message_sent" )
+	measure 'Encaminhamentos enviados pelo bot' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent", DailyWhatsAppFlowMetrics[step_key] = "faq_handoff" ), 0 )
 		formatString: #,0
+		lineageTag: bb61a71a-f79b-431e-933c-deff01d15086
+
+	measure 'Respostas da equipe observadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "team_message_sent" ), 0 )
+		formatString: #,0
+		lineageTag: 38275b0e-e30a-445f-b322-776d16d4e2e2
 
 	column Coluna
 		dataType: string
 		isHidden
+		lineageTag: 67122ea1-6690-4b2f-8158-390dbf372182
 		summarizeBy: none
 		sourceColumn: [Coluna]
 

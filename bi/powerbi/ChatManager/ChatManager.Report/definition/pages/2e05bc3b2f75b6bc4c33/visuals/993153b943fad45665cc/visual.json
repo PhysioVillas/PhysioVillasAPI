@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "993153b943fad45665cc",
   "position": {
     "x": 848,
     "y": 228,
-    "width": 416,
-    "height": 476,
     "z": 23648,
+    "height": 476,
+    "width": 416,
     "tabOrder": 23648
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "DailyMessageMetrics.sent_via",
-              "nativeQueryRef": "sent_via"
+              "nativeQueryRef": "sent_via",
+              "active": true
             }
           ]
         },

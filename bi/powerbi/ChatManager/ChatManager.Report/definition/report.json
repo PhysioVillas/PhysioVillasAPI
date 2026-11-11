@@ -37,14 +37,14 @@
       "type": "RegisteredResources",
       "items": [
         {
-          "name": "PhysioVilas-ChatManager.json",
-          "path": "PhysioVilas-ChatManager.json",
-          "type": "CustomTheme"
-        },
-        {
           "name": "logo_physiovilas.png",
           "path": "logo_physiovilas.png",
           "type": "Image"
+        },
+        {
+          "name": "PhysioVilas-ChatManager.json",
+          "path": "PhysioVilas-ChatManager.json",
+          "type": "CustomTheme"
         }
       ]
     }
