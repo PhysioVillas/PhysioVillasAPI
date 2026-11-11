@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { flowEventForMessage } from './whatsappFlowEvents.js';
 
 const { Pool } = pg;
 
@@ -111,6 +112,28 @@ function createDatabase({ connectionString, pool } = {}) {
     return insertMessageWith(resolvedPool, message);
   }
 
+  async function recordFlowEventsWith(executor, message, conversationId) {
+    for (const event of flowEventForMessage(message)) {
+      await executor.query({
+        text: `
+          insert into whatsapp_flow_events (
+            message_id, conversation_id, event_type, step_key, source, occurred_at
+          )
+          values ($1, $2, $3, $4, $5, coalesce($6, now()))
+          on conflict (message_id, event_type) do nothing
+        `,
+        values: [
+          message.id,
+          conversationId,
+          event.eventType,
+          event.stepKey,
+          event.source,
+          event.occurredAt,
+        ],
+      });
+    }
+  }
+
   async function findOrCreateOpenConversationWith(executor, {
     waId,
     lastMessageAt = null,
@@ -184,6 +207,7 @@ function createDatabase({ connectionString, pool } = {}) {
           to_regclass('public.conversations') is not null as conversations_exists,
           to_regclass('public.conversations_one_open_per_contact_idx') is not null as conversations_index_exists,
           to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists,
+          to_regclass('reporting.daily_whatsapp_flow_metrics') is not null as flow_reporting_view_exists,
           exists (
             select 1
             from information_schema.columns
@@ -201,6 +225,7 @@ function createDatabase({ connectionString, pool } = {}) {
       schema?.conversations_exists !== true ||
       schema?.conversations_index_exists !== true ||
       schema?.reporting_view_exists !== true ||
+      schema?.flow_reporting_view_exists !== true ||
       schema?.delivery_status_column_exists !== true
     ) {
       throw new Error('ChatManager database schema is incomplete.');
@@ -221,6 +246,9 @@ function createDatabase({ connectionString, pool } = {}) {
         ...message,
         conversationId: conversation.id,
       });
+      if (persistedMessage !== null) {
+        await recordFlowEventsWith(client, { ...message, ...persistedMessage }, conversation.id);
+      }
       await client.query('commit');
 
       return { contact: persistedContact, conversation, message: persistedMessage };
@@ -289,6 +317,9 @@ function createDatabase({ connectionString, pool } = {}) {
         status,
         createdAt,
       });
+      if (message !== null) {
+        await recordFlowEventsWith(client, { ...message, direction: 'out', sentVia: 'api', messageType }, conversation.id);
+      }
       await client.query('commit');
 
       return { contact, conversation, message };

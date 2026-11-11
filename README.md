@@ -1,87 +1,64 @@
 # ChatManager
 
-Backend de integração WhatsApp para a **[Physiovilas](https://www.physiovilas.com.br/)**,
-clínica de saúde ortopédica (fisioterapia, RPG, Pilates, massoterapia,
-reabilitação pélvica, osteopatia e microfisioterapia) com mais de 20 anos de
-atuação na região metropolitana de Salvador/BA (unidades em Lauro de
-Freitas, Busca Vida e Vilas do Atlântico).
+Backend de atendimento e integração WhatsApp da **[PhysioVilas](https://www.physiovilas.com.br/)**. O ChatManager recebe eventos do WhatsApp, executa regras de atendimento no backend, persiste o histórico operacional no PostgreSQL do Neon e disponibiliza dados agregados para o Power BI.
 
-## Ideia do projeto
+## Como o fluxo funciona
 
-O ChatManager é o **elo de dados** entre o WhatsApp da clínica e o Power BI:
-recebe mensagens via **Infobip**, grava no **Neon (Postgres)** e permite
-enviar mensagens/templates de volta. Não é um bot, não tem frontend, não tem
-login — atendimento automático, FAQ e templates são configurados **na própria
-plataforma Infobip**, e a consulta/análise dos dados é feita pelo **Power
-BI**, conectado direto no Neon.
-
-> Contexto completo do produto e arquitetura técnica: [`docs/PRD_PhysioVilas_WhatsApp.md`](docs/PRD_PhysioVilas_WhatsApp.md)
-> Backlog de tickets: [`docs/BACKLOG.md`](docs/BACKLOG.md)
-
-## Status atual
-
-**API-01 concluída localmente.** Há um scaffold
-Node.js/Express em ESM, com `GET /health`, `GET /health/ready` e export default
-compatível com Vercel. A integração segura contém apenas a validação sem envio
-da Messages API; o schema PostgreSQL está versionado e foi aplicado no Neon de
-homologação.
-
-`GET /health/ready` só retorna sucesso quando o banco configurado contém
-`contacts`, `messages`, `reporting.daily_message_metrics` e a coluna de
-atualização de entrega; ele não mostra
-detalhes de conexão quando a verificação falha.
-O receptor local de webhook normaliza eventos de entrada conhecidos e permanece
-desligado até banco e token de webhook serem configurados.
-O endpoint interno de validação de mensagens permanece desligado até receber as
-credenciais da Infobip e um token próprio; ele não possui operação de envio.
-
-Em 2026-09-18, um template sandbox da API WhatsApp dedicada da Infobip foi
-aceito (HTTP 200) e recebido no número verificado do trial. Isso valida apenas
-o remetente sandbox e a entrega inicial: não houve deploy, banco de dados,
-webhook ou envio pelo código deste repositório. Também não valida o contrato da
-Messages API adotada para produção.
-O ticket permanece em andamento porque a Definição de Pronto exige OpenAPI em
-`/docs`; essa superfície pertence ao `API-05`, que depende de `API-02` e
-`API-03`. O detalhamento e as evidências disponíveis estão em
-[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
-
-O app Express já foi publicado em preview isolado na Vercel, sem banco,
-credenciais Infobip ou domínio próprio. A próxima publicação de homologação só
-receberá `DATABASE_URL` do Neon; as integrações Infobip permanecem desligadas.
-Veja a sequência e os limites em [`docs/HOMOLOGATION.md`](docs/HOMOLOGATION.md) e a
-[documentação da Vercel para Express](https://vercel.com/docs/frameworks/backend/express).
-
-## Arquitetura (planejada)
-
-```
+```text
 Paciente (WhatsApp)
-      │
-      ▼
-  Infobip (canal, FAQ/bot, templates)
-      │
-      ├── POST webhook ──▶ Backend (Node/Express, serverless na Vercel) ─▶ Neon
-      └── API de envio  ◀── Backend chama a Infobip para enviar mensagem/template
-
-Power BI ──── conexão Postgres direta ────▶ Neon
+        ⇅
+Infobip — transporte de mensagens e webhooks
+        ⇅
+API ChatManager — Node.js/Express na Vercel
+   ├── aplica menu, FAQ e encaminhamento humano
+   ├── persiste mensagens e conversas no Neon
+   └── envia respostas pelo provedor WhatsApp
+        ↓
+Neon (PostgreSQL) ── schema reporting ──▶ Power BI
 ```
 
-- **Backend:** Node.js + Express, empacotado como Serverless Function na
-  **Vercel** (sem Next.js — só a API).
-- **Banco:** **Neon** (Postgres serverless).
-- **Canal WhatsApp:** **Infobip** (conta e canal já configurados).
-- **Consulta/BI:** **Power BI**, conectado direto ao Neon via conector
-  Postgres nativo.
-- **Sem** frontend, sem autenticação, sem tempo real (Socket.io).
+A Infobip é o provedor de transporte usado pela API; **as regras do fluxo não são configuradas em um Flow da Infobip**. O menu, as respostas de FAQ, o encaminhamento à equipe e a pausa após handoff são executados pelo código do ChatManager. A Vercel hospeda a API; o Power BI é uma aplicação separada que consulta o banco.
 
-Detalhes completos: [`docs/PRD_PhysioVilas_WhatsApp.md`](docs/PRD_PhysioVilas_WhatsApp.md).
+## Fluxo de atendimento implementado
+
+1. A mensagem recebida chega ao webhook e é normalizada antes de ser associada ao contato, conversa e mensagem.
+2. O backend responde com o menu interativo. As opções atuais cobrem agendamento/remarcação, novo paciente, equipe humana e dúvidas institucionais.
+3. As perguntas frequentes disponíveis são horários, convênios, localização e serviços. A equipe pode ser acionada a partir do menu ou das respostas.
+4. Após handoff ou resposta da equipe pelo WhatsApp Business App, o bot silencia por 12 horas; `MENU` reabre o menu.
+5. Mensagens de saída podem ser enviadas pelas rotas internas de texto e template. Quando o envio está configurado, o recibo do provedor é persistido no Neon.
+
+O código ainda não está ligado a um sistema de agenda. Portanto, o fluxo não confirma disponibilidade nem registra que um atendimento foi marcado, realizado, cancelado ou faltou. Essas informações precisam vir de uma agenda ou de uma atualização estruturada pela equipe; não devem ser inferidas do texto da conversa.
+
+## Componentes
+
+- **API:** Node.js + Express em módulos ESM, executável localmente e compatível com Vercel Functions.
+- **WhatsApp:** webhooks e envio de mensagens pelo provedor configurado no backend. As regras de atendimento ficam no ChatManager.
+- **Banco:** Neon/PostgreSQL. As migrações versionam contatos, conversas, mensagens, catálogos e métricas de entrega.
+- **BI:** Power BI pode consumir somente views agregadas do schema `reporting` do Neon, com uma credencial somente leitura. Além de `reporting.daily_message_metrics`, a migration 007 acrescenta `reporting.daily_whatsapp_flow_metrics` para etapas observadas do autoatendimento. Não há fonte para agenda, consultas realizadas/canceladas, capacidade ou faturamento.
+- **Documentação da API:** `GET /docs` e `GET /docs.json`.
+
+As rotas de envio são internas e dependem de token próprio, banco e configuração do provedor. O webhook de entrada e as configurações de autenticação devem seguir as evidências e pendências registradas antes de qualquer operação com pacientes reais.
+
+## Desenvolvimento local
+
+Requisitos: Node.js `>=20 <25`.
+
+```bash
+npm ci
+npm test
+npm run check
+npm start
+```
+
+O servidor local não precisa de credenciais externas para iniciar. `DATABASE_URL`, token interno e credenciais do provedor só devem ser configurados em ambiente apropriado, nunca commitados no repositório.
 
 ## Documentação
 
-- [`docs/PRD_PhysioVilas_WhatsApp.md`](docs/PRD_PhysioVilas_WhatsApp.md) — escopo do produto e arquitetura técnica (rotas, schema, coexistência, agendamento, riscos).
-- [`docs/BACKLOG.md`](docs/BACKLOG.md) — tickets de desenvolvimento.
-- [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) — registro factual do estado da implementação e das lacunas de evidência.
-- [`docs/INFOBIP_RULES.md`](docs/INFOBIP_RULES.md) — evidências de integração
-  Infobip e lacunas ainda abertas.
-- [`docs/INFOBIP_AUTOMATIONS.md`](docs/INFOBIP_AUTOMATIONS.md) — pacote
-  versionado de templates, menu, FAQ e lembretes, conciliado com os protótipos
-  anteriores sem ativar nenhuma automação.
+- [`docs/PRD_PhysioVilas_WhatsApp.md`](docs/PRD_PhysioVilas_WhatsApp.md) — escopo e arquitetura pretendida.
+- [`docs/BACKLOG.md`](docs/BACKLOG.md) — backlog e critérios de aceite.
+- [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) — evidências, estado técnico e pendências.
+- [`docs/HOMOLOGATION.md`](docs/HOMOLOGATION.md) — limites e procedimento de homologação.
+- [`db/DATA_MODEL.md`](db/DATA_MODEL.md) — modelo operacional e camada de relatórios.
+- [`docs/BI_DATA_CONTRACT.md`](docs/BI_DATA_CONTRACT.md) — contrato, significado e limites dos indicadores do Power BI.
+- [`docs/INFOBIP_RULES.md`](docs/INFOBIP_RULES.md) — contratos e evidências do provedor de mensagens.
+- [`docs/INFOBIP_AUTOMATIONS.md`](docs/INFOBIP_AUTOMATIONS.md) — conteúdo e regras de atendimento que ainda dependem de revisão/homologação.

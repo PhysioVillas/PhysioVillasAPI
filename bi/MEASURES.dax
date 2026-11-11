@@ -1,0 +1,49 @@
+-- Tabela: DailyMessageMetrics
+Mensagens = SUM ( DailyMessageMetrics[message_count] )
+
+Mensagens recebidas =
+CALCULATE ( [Mensagens], DailyMessageMetrics[direction] = "in" )
+
+Mensagens enviadas =
+CALCULATE ( [Mensagens], DailyMessageMetrics[direction] = "out" )
+
+Mensagens com erro =
+CALCULATE (
+    SUM ( DailyMessageMetrics[error_count] ),
+    DailyMessageMetrics[direction] = "out"
+)
+
+Taxa de erro de envio = DIVIDE ( [Mensagens com erro], [Mensagens enviadas] )
+
+-- Tabela: DailyWhatsAppFlowMetrics
+Mensagens recebidas no fluxo =
+CALCULATE (
+    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    DailyWhatsAppFlowMetrics[event_type] = "message_received"
+)
+
+Opções do menu selecionadas =
+CALCULATE (
+    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected"
+)
+
+Intenção de agendamento =
+CALCULATE (
+    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected",
+    DailyWhatsAppFlowMetrics[step_key] = "menu_agendar"
+)
+
+Encaminhamentos enviados pelo bot =
+CALCULATE (
+    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent",
+    DailyWhatsAppFlowMetrics[step_key] = "faq_handoff"
+)
+
+Respostas da equipe observadas =
+CALCULATE (
+    SUM ( DailyWhatsAppFlowMetrics[event_count] ),
+    DailyWhatsAppFlowMetrics[event_type] = "team_message_sent"
+)

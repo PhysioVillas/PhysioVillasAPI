@@ -152,6 +152,7 @@ test('verifySchema requires the operational tables and reporting view', async ()
           conversations_exists: true,
           conversations_index_exists: true,
           reporting_view_exists: true,
+          flow_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       };
@@ -165,6 +166,7 @@ test('verifySchema requires the operational tables and reporting view', async ()
   assert.match(pool.calls[0].text, /to_regclass\('public\.conversations'\)/i);
   assert.match(pool.calls[0].text, /conversations_one_open_per_contact_idx/i);
   assert.match(pool.calls[0].text, /reporting\.daily_message_metrics/i);
+  assert.match(pool.calls[0].text, /reporting\.daily_whatsapp_flow_metrics/i);
   assert.match(pool.calls[0].text, /column_name = 'status_updated_at'/i);
 });
 
@@ -178,6 +180,7 @@ test('verifySchema rejects an incomplete database before webhooks are accepted',
           conversations_exists: true,
           conversations_index_exists: true,
           reporting_view_exists: true,
+          flow_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       }),
@@ -197,6 +200,7 @@ test('verifySchema requires the status-update column before delivery reports are
           conversations_exists: true,
           conversations_index_exists: true,
           reporting_view_exists: true,
+          flow_reporting_view_exists: true,
           delivery_status_column_exists: false,
         }],
       }),
@@ -246,9 +250,98 @@ test('persistWebhookMessage atomically saves a normalized webhook message', asyn
   assert.match(calls[1].text, /insert into contacts/i);
   assert.match(calls[2].text, /insert into conversations/i);
   assert.match(calls[3].text, /insert into messages/i);
-  assert.equal(calls[4], 'commit');
-  assert.equal(calls[5], 'release');
+  assert.match(calls[4].text, /insert into whatsapp_flow_events/i);
+  assert.deepEqual(calls[4].values.slice(1, 5), [
+    'conversation-id',
+    'message_received',
+    null,
+    'patient',
+  ]);
+  assert.equal(calls[5], 'commit');
+  assert.equal(calls[6], 'release');
   assert.equal(calls[3].values[2], 'conversation-id');
+});
+
+test('persistWebhookMessage captures only allowlisted interactive flow keys atomically', async () => {
+  const calls = [];
+  const client = {
+    query: async (query) => {
+      calls.push(query);
+      if (typeof query === 'string') return { rows: [] };
+      return {
+        rows: [query.text.includes('insert into conversations')
+          ? { id: 'conversation-id' }
+          : { id: 'message-id' }],
+      };
+    },
+    release: () => calls.push('release'),
+  };
+  const database = createDatabase({ pool: { connect: async () => client } });
+
+  await database.persistWebhookMessage({
+    contact: { waId: 'contact-id' },
+    message: {
+      direction: 'in',
+      messageType: 'interactive_list_reply',
+      replyId: 'menu_agendar',
+      body: 'Agendar ou remarcar',
+    },
+  });
+
+  const events = calls.filter((call) => typeof call === 'object' && call.text.includes('insert into whatsapp_flow_events'));
+  assert.equal(events.length, 2);
+  assert.equal(events[1].values[2], 'flow_option_selected');
+  assert.equal(events[1].values[3], 'menu_agendar');
+  assert.equal(events[1].values[4], 'patient');
+  assert.match(events[1].text, /on conflict \(message_id, event_type\) do nothing/i);
+  assert.equal(calls.at(-2), 'commit');
+});
+
+test('persistWebhookMessage does not create flow events for a duplicate provider message', async () => {
+  const calls = [];
+  const client = {
+    query: async (query) => {
+      calls.push(query);
+      if (typeof query === 'string') return { rows: [] };
+      if (query.text.includes('insert into conversations')) return { rows: [{ id: 'conversation-id' }] };
+      if (query.text.includes('insert into messages')) return { rows: [] };
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const database = createDatabase({ pool: { connect: async () => client } });
+
+  await database.persistWebhookMessage({
+    contact: { waId: 'contact-id' },
+    message: { direction: 'in', messageType: 'text', infobipMessageId: 'duplicate' },
+  });
+
+  assert.equal(calls.some((call) => typeof call === 'object' && call.text.includes('whatsapp_flow_events')), false);
+});
+
+test('persistWebhookMessage records a Business App reply as a team event', async () => {
+  const calls = [];
+  const client = {
+    query: async (query) => {
+      calls.push(query);
+      if (typeof query === 'string') return { rows: [] };
+      return {
+        rows: [query.text.includes('insert into conversations')
+          ? { id: 'conversation-id' }
+          : { id: 'message-id' }],
+      };
+    },
+    release() {},
+  };
+  const database = createDatabase({ pool: { connect: async () => client } });
+
+  await database.persistWebhookMessage({
+    contact: { waId: 'contact-id' },
+    message: { direction: 'out', sentVia: 'business_app', messageType: 'text', body: 'Resposta' },
+  });
+
+  const event = calls.find((call) => typeof call === 'object' && call.text.includes('insert into whatsapp_flow_events'));
+  assert.deepEqual(event.values.slice(2, 5), ['team_message_sent', null, 'team']);
 });
 
 test('persistWebhookMessage rolls back and releases the database client on failure', async () => {
@@ -372,7 +465,9 @@ test('persistOutboundMessage records the FAQ bot conversation intent in the same
   assert.deepEqual(calls[3].values, ['conversation-id', 'human_handoff']);
   assert.match(calls[4].text, /insert into messages/i);
   assert.equal(calls[4].values[6], 'faq_handoff');
-  assert.equal(calls[5], 'commit');
+  assert.match(calls[5].text, /insert into whatsapp_flow_events/i);
+  assert.deepEqual(calls[5].values.slice(2, 5), ['bot_step_sent', 'faq_handoff', 'bot']);
+  assert.equal(calls[6], 'commit');
   assert.equal(result.conversation.current_intent, 'human_handoff');
   await assert.rejects(
     database.persistOutboundMessage({
