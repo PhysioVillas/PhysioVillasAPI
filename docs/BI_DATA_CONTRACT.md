@@ -31,6 +31,13 @@ IDs arbitrários recebidos do WhatsApp.
 - `team_message_sent`: mensagem de saída recebida como eco do WhatsApp Business
   App no fluxo de coexistência.
 
+Para medir conversas com mensagem recebida por dia, some `conversation_count`
+somente nas linhas `message_received` da view. Isso conta conversas distintas
+que tiveram pelo menos uma mensagem recebida naquele dia; uma conversa que
+continua em dias diferentes pode aparecer em cada um desses dias. Não some
+`conversation_count` entre tipos de evento para obter um total de conversas,
+pois a mesma conversa pode participar de várias etapas.
+
 `menu_agendar` registra a seleção da opção “Agendar/Remarcar”. Isso não
 demonstra que a equipe marcou a consulta nem que o paciente confirmou um
 horário. O sistema ainda não possui agenda, disponibilidade,
@@ -52,6 +59,12 @@ PBIP de referência contém entidades simuladas para vários desses assuntos;
 elas não devem ser ligadas a mensagens ou tratadas como dados reais. Uma futura
 integração deve mapear cada métrica a um sistema de origem e definir chaves,
 estados, horários e regras de qualidade antes de publicar medidas no BI.
+
+O tempo médio de resposta também não está disponível nas views agregadas atuais.
+Antes de calculá-lo, é preciso definir se a resposta considerada é a automática
+do bot ou a primeira resposta humana da equipe, e como parear mensagens de
+entrada com respostas. Não inferir tempo de atendimento somando eventos nem
+tratar uma resposta do bot como resposta da equipe.
 
 ## Conexão Power BI
 

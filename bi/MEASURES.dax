@@ -24,6 +24,12 @@ COALESCE ( CALCULATE (
     DailyWhatsAppFlowMetrics[event_type] = "message_received"
 ), 0 )
 
+Conversas com mensagem recebida =
+COALESCE ( CALCULATE (
+    SUM ( DailyWhatsAppFlowMetrics[conversation_count] ),
+    DailyWhatsAppFlowMetrics[event_type] = "message_received"
+), 0 )
+
 Opções do menu selecionadas =
 COALESCE ( CALCULATE (
     [Eventos de fluxo],

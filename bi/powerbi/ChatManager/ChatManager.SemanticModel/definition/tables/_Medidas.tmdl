@@ -29,6 +29,10 @@ table _Medidas
 		formatString: #,0
 		lineageTag: 1dd7104d-a061-4056-9b74-05becbc9336d
 
+	measure 'Conversas com mensagem recebida' = COALESCE ( CALCULATE ( SUM ( DailyWhatsAppFlowMetrics[conversation_count] ), DailyWhatsAppFlowMetrics[event_type] = "message_received" ), 0 )
+		formatString: #,0
+		lineageTag: b2e1d7f8-14c5-4c64-a9d7-3c2fb3680e1c
+
 	measure 'Opções do menu selecionadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected" ), 0 )
 		formatString: #,0
 		lineageTag: 7f3ef440-9750-4d2c-8022-c347a9a05e97
@@ -36,10 +40,6 @@ table _Medidas
 	measure 'Seleções em Agendar/Remarcar' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] = "menu_agendar" ), 0 )
 		formatString: #,0
 		lineageTag: e1a8d54a-bf39-4061-bd60-ab74a4934582
-
-	measure 'Seleções com encaminhamento à equipe' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] IN { "menu_agendar", "menu_paciente_novo", "menu_atendente", "btn_atendente" } ), 0 )
-		formatString: #,0
-		lineageTag: cff24b19-41f7-49e8-a535-01d0e72041a1
 
 	measure 'Respostas automáticas observadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "bot_step_sent" ), 0 )
 		formatString: #,0
@@ -52,6 +52,10 @@ table _Medidas
 	measure 'Respostas da equipe observadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "team_message_sent" ), 0 )
 		formatString: #,0
 		lineageTag: 38275b0e-e30a-445f-b322-776d16d4e2e2
+
+	measure 'Seleções com encaminhamento à equipe' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] IN { "menu_agendar", "menu_paciente_novo", "menu_atendente", "btn_atendente" } ), 0 )
+		formatString: #,0
+		lineageTag: cff24b19-41f7-49e8-a535-01d0e72041a1
 
 	column Coluna
 		dataType: string
