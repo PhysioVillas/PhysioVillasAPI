@@ -1,0 +1,44 @@
+table DailyHumanResponseMetrics
+	lineageTag: 8c36c297-c038-4e5d-9cfe-fbf3f41fd6e2
+
+	column activity_date
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 596b0b6d-bbe0-4f6f-997d-4a5ef1801dbe
+		summarizeBy: none
+		sourceColumn: activity_date
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column response_count
+		dataType: int64
+		formatString: #,0
+		lineageTag: 1ca09eb9-c01e-4ec6-b4b1-1a3bd8fc3e42
+		summarizeBy: sum
+		sourceColumn: response_count
+
+	column average_response_seconds
+		dataType: double
+		formatString: 0.0
+		lineageTag: 487f891f-9660-4efb-b134-b1d4c5dc1f07
+		summarizeBy: none
+		sourceColumn: average_response_seconds
+
+	column median_response_seconds
+		dataType: double
+		formatString: 0.0
+		lineageTag: b8b2b778-4f8f-48e9-98eb-661c131ba716
+		summarizeBy: none
+		sourceColumn: median_response_seconds
+
+	partition DailyHumanResponseMetrics = m
+		mode: import
+		source =
+				let
+					Source = PostgreSQL.Database(NeonServer, NeonDatabase),
+					ReportingView = Source{[Schema = "reporting", Item = "daily_human_response_metrics"]}[Data],
+					TypedColumns = Table.TransformColumnTypes(ReportingView, {{"activity_date", type date}, {"response_count", Int64.Type}, {"average_response_seconds", type number}, {"median_response_seconds", type number}})
+				in
+					TypedColumns
+
+	annotation PBI_ResultType = Table

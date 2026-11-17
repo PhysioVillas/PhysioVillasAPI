@@ -153,6 +153,7 @@ test('verifySchema requires the operational tables and reporting view', async ()
           conversations_index_exists: true,
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
+          human_response_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       };
@@ -181,6 +182,7 @@ test('verifySchema rejects an incomplete database before webhooks are accepted',
           conversations_index_exists: true,
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
+          human_response_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       }),
@@ -201,7 +203,29 @@ test('verifySchema requires the status-update column before delivery reports are
           conversations_index_exists: true,
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
+          human_response_reporting_view_exists: true,
           delivery_status_column_exists: false,
+        }],
+      }),
+    },
+  });
+
+  await assert.rejects(database.verifySchema(), /database schema is incomplete/);
+});
+
+test('verifySchema requires the human response reporting view', async () => {
+  const database = createDatabase({
+    pool: {
+      query: async () => ({
+        rows: [{
+          contacts_exists: true,
+          messages_exists: true,
+          conversations_exists: true,
+          conversations_index_exists: true,
+          reporting_view_exists: true,
+          flow_reporting_view_exists: true,
+          human_response_reporting_view_exists: false,
+          delivery_status_column_exists: true,
         }],
       }),
     },

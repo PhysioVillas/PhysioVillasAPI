@@ -14,7 +14,7 @@ na inicialização da API ou no deploy.
 
 Alternativamente, execute no console SQL do Neon, em ordem, os arquivos
 `migrations/001_initial_schema.sql` a
-`migrations/007_whatsapp_flow_reporting.sql`. Depois, `GET /health/ready` deve
+`migrations/008_human_response_reporting.sql`. Depois, `GET /health/ready` deve
 confirmar tabelas operacionais, a conversa ativa por contato, as visões
 analíticas e a coluna de entrega antes de liberar o webhook em um preview.
 

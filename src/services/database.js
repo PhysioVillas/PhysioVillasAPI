@@ -208,6 +208,7 @@ function createDatabase({ connectionString, pool } = {}) {
           to_regclass('public.conversations_one_open_per_contact_idx') is not null as conversations_index_exists,
           to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists,
           to_regclass('reporting.daily_whatsapp_flow_metrics') is not null as flow_reporting_view_exists,
+          to_regclass('reporting.daily_human_response_metrics') is not null as human_response_reporting_view_exists,
           exists (
             select 1
             from information_schema.columns
@@ -226,6 +227,7 @@ function createDatabase({ connectionString, pool } = {}) {
       schema?.conversations_index_exists !== true ||
       schema?.reporting_view_exists !== true ||
       schema?.flow_reporting_view_exists !== true ||
+      schema?.human_response_reporting_view_exists !== true ||
       schema?.delivery_status_column_exists !== true
     ) {
       throw new Error('ChatManager database schema is incomplete.');

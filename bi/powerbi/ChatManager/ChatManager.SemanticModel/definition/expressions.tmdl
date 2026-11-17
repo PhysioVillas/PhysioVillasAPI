@@ -1,3 +1,13 @@
 expression NeonServer = "SEU_ENDPOINT_POOLED_NEON:5432" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 4298ef17-9699-49c7-b5f3-fe3b306db38f
+
+	annotation PBI_NavigationStepName = Navegação
+
+	annotation PBI_ResultType = Text
 
 expression NeonDatabase = "neondb" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: e3d259ae-13b3-448e-b8f0-449621eedd1e
+
+	annotation PBI_NavigationStepName = Navegação
+
+	annotation PBI_ResultType = Text

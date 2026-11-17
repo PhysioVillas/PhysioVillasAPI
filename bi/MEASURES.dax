@@ -66,3 +66,17 @@ COALESCE ( CALCULATE (
     [Eventos de fluxo],
     DailyWhatsAppFlowMetrics[event_type] = "team_message_sent"
 ), 0 )
+
+-- Tabela: DailyHumanResponseMetrics
+Respostas humanas com tempo medido =
+COALESCE ( SUM ( DailyHumanResponseMetrics[response_count] ), 0 )
+
+Tempo médio até primeira resposta humana (min) =
+DIVIDE (
+    SUMX (
+        DailyHumanResponseMetrics,
+        DailyHumanResponseMetrics[average_response_seconds]
+            * DailyHumanResponseMetrics[response_count]
+    ),
+    SUM ( DailyHumanResponseMetrics[response_count] ) * 60
+)

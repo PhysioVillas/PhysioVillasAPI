@@ -70,6 +70,13 @@ permitidos pelo próprio catálogo do bot; IDs desconhecidos não viram dimensã
 analítica. Consulte [`../docs/BI_DATA_CONTRACT.md`](../docs/BI_DATA_CONTRACT.md)
 para o significado dos indicadores e as limitações do modelo PBIP de exemplo.
 
+`reporting.daily_human_response_metrics` pareia a primeira mensagem ainda sem
+resposta humana com a próxima resposta observada pelo eco do WhatsApp Business
+App, agrega contagem e tempos médio/mediano em segundos por dia UTC e omite
+intervalos com timestamps ambíguos. O bot não conta como resposta humana.
+A migration 008 inclui índice parcial por conversa e instante para apoiar os
+pareamentos sem expor identificadores na view.
+
 ## Sequência de migrações
 
 1. `001_initial_schema.sql` cria o módulo operacional e seus índices.
@@ -85,6 +92,8 @@ para o significado dos indicadores e as limitações do modelo PBIP de exemplo.
    auditoria operacional.
 7. `007_whatsapp_flow_reporting.sql` registra eventos mínimos do fluxo e cria
    a visão agregada diária para o BI.
+8. `008_human_response_reporting.sql` acrescenta a visão agregada de tempos de
+   resposta humana.
 
 As migrações são aplicadas pelo administrador do Neon, em ordem, com uma
 conexão SSL. Elas não criam uma conta, banco externo, usuário ou senha.

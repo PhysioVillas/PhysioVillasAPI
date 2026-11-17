@@ -5,3 +5,7 @@ relationship DailyMessageMetrics_activity_date_DimDate
 relationship DailyWhatsAppFlowMetrics_activity_date_DimDate
 	fromColumn: DailyWhatsAppFlowMetrics.activity_date
 	toColumn: DimDate.activity_date
+
+relationship DailyHumanResponseMetrics_activity_date_DimDate
+	fromColumn: DailyHumanResponseMetrics.activity_date
+	toColumn: DimDate.activity_date

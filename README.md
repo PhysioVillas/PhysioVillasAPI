@@ -33,8 +33,8 @@ O código ainda não está ligado a um sistema de agenda. Portanto, o fluxo não
 
 - **API:** Node.js + Express em módulos ESM, executável localmente e compatível com Vercel Functions.
 - **WhatsApp:** webhooks e envio de mensagens pelo provedor configurado no backend. As regras de atendimento ficam no ChatManager.
-- **Banco:** Neon/PostgreSQL. As migrações versionam contatos, conversas, mensagens, catálogos e métricas de entrega.
-- **BI:** Power BI pode consumir somente views agregadas do schema `reporting` do Neon, com uma credencial somente leitura. Além de `reporting.daily_message_metrics`, a migration 007 acrescenta `reporting.daily_whatsapp_flow_metrics` para etapas observadas do autoatendimento. Não há fonte para agenda, consultas realizadas/canceladas, capacidade ou faturamento.
+- **Banco:** Neon/PostgreSQL. As migrações versionam contatos, conversas, mensagens, catálogos, métricas de entrega e eventos agregáveis do fluxo.
+- **BI:** Power BI consome views agregadas do schema `reporting` do Neon com credencial somente leitura. As migrations 007 e 008 adicionam métricas do fluxo e tempo de primeira resposta humana observada. Não há fonte para agenda, consultas realizadas/canceladas, capacidade ou faturamento.
 - **Documentação da API:** `GET /docs` e `GET /docs.json`.
 
 As rotas de envio são internas e dependem de token próprio, banco e configuração do provedor. O webhook de entrada e as configurações de autenticação devem seguir as evidências e pendências registradas antes de qualquer operação com pacientes reais.

@@ -14,6 +14,7 @@ referência de páginas e medidas, não como fonte real nem como dados a importa
 |---|---|---|
 | `reporting.daily_message_metrics` | volume de mensagens e erros de entrega por dia | direção, canal de envio, tipo e status |
 | `reporting.daily_whatsapp_flow_metrics` | eventos observados no fluxo e conversas distintas que os produziram | data UTC, evento, etapa conhecida e origem |
+| `reporting.daily_human_response_metrics` | quantidade de respostas humanas pareadas e tempos médio/mediano em segundos | data UTC da resposta |
 
 As views não expõem telefone, nome, corpo de mensagem ou conteúdo do webhook.
 Eventos de fluxo só são gravados na mesma transação em que uma mensagem nova é
@@ -60,11 +61,16 @@ elas não devem ser ligadas a mensagens ou tratadas como dados reais. Uma futura
 integração deve mapear cada métrica a um sistema de origem e definir chaves,
 estados, horários e regras de qualidade antes de publicar medidas no BI.
 
-O tempo médio de resposta também não está disponível nas views agregadas atuais.
-Antes de calculá-lo, é preciso definir se a resposta considerada é a automática
-do bot ou a primeira resposta humana da equipe, e como parear mensagens de
-entrada com respostas. Não inferir tempo de atendimento somando eventos nem
-tratar uma resposta do bot como resposta da equipe.
+`daily_human_response_metrics` mede a espera observável entre a primeira
+mensagem recebida após a resposta humana anterior e a próxima mensagem enviada
+pela equipe pelo WhatsApp Business App. Respostas automáticas do bot não
+encerram a espera. O intervalo só é incluído quando os horários permitem uma
+ordenação estrita; eventos com o mesmo instante são omitidos para evitar
+pareamentos ambíguos, porque os ecos da coexistência têm precisão de segundos.
+As médias do Power BI são ponderadas pelo número de respostas pareadas. Esse
+indicador representa espera até a primeira resposta humana observada, não tempo
+total de atendimento nem SLA. A quantidade de respostas com tempo mensurável
+deve ser lida junto da média; envios humanos sem eco recebido não aparecem.
 
 ## Conexão Power BI
 

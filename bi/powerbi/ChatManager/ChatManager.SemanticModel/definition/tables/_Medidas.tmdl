@@ -29,10 +29,6 @@ table _Medidas
 		formatString: #,0
 		lineageTag: 1dd7104d-a061-4056-9b74-05becbc9336d
 
-	measure 'Conversas com mensagem recebida' = COALESCE ( CALCULATE ( SUM ( DailyWhatsAppFlowMetrics[conversation_count] ), DailyWhatsAppFlowMetrics[event_type] = "message_received" ), 0 )
-		formatString: #,0
-		lineageTag: b2e1d7f8-14c5-4c64-a9d7-3c2fb3680e1c
-
 	measure 'Opções do menu selecionadas' = COALESCE ( CALCULATE ( [Eventos de fluxo], DailyWhatsAppFlowMetrics[event_type] = "flow_option_selected" ), 0 )
 		formatString: #,0
 		lineageTag: 7f3ef440-9750-4d2c-8022-c347a9a05e97
@@ -56,6 +52,14 @@ table _Medidas
 	measure 'Seleções com encaminhamento à equipe' = COALESCE ( CALCULATE ( [Opções do menu selecionadas], DailyWhatsAppFlowMetrics[step_key] IN { "menu_agendar", "menu_paciente_novo", "menu_atendente", "btn_atendente" } ), 0 )
 		formatString: #,0
 		lineageTag: cff24b19-41f7-49e8-a535-01d0e72041a1
+
+	measure 'Respostas humanas com tempo medido' = COALESCE ( SUM ( DailyHumanResponseMetrics[response_count] ), 0 )
+		formatString: #,0
+		lineageTag: d4a9dd9f-313f-44a7-85b9-0c5d97f265c1
+
+	measure 'Tempo médio até primeira resposta humana (min)' = DIVIDE ( SUMX ( DailyHumanResponseMetrics, DailyHumanResponseMetrics[average_response_seconds] * DailyHumanResponseMetrics[response_count] ), SUM ( DailyHumanResponseMetrics[response_count] ) * 60 )
+		formatString: 0.0
+		lineageTag: 97811b56-f953-4d29-b0b1-f7187c3fb7a1
 
 	column Coluna
 		dataType: string

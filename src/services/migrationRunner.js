@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const { Pool } = pg;
@@ -75,7 +76,7 @@ async function applyMigration(client, migration) {
 
 async function runMigrations({
   connectionString,
-  migrationsDirectory = new URL('../../db/migrations/', import.meta.url),
+  migrationsDirectory = fileURLToPath(new URL('../../db/migrations/', import.meta.url)),
   pool,
 } = {}) {
   const resolvedPool = pool ?? new Pool({
