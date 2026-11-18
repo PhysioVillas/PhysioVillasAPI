@@ -17,7 +17,32 @@ pacientes reais. Valem até o fim da POC:
 - **Retenção de mensagens infinita.** Nada é apagado, o que preserva o
   histórico do Power BI.
 
-O plano detalhado está em `plan.md`. Nada dele está implementado nesta data.
+O plano detalhado está em `plan.md`.
+
+## Estado atual — 2026-11-18 (chatbot da POC)
+
+Esta seção substitui as anteriores quando houver conflito.
+
+- **Implementado e mesclado na branch `{Davi}-integração-do-chatbot-com-BD-Neon`**
+  (waves 1–5 de `plan-backlog.md`): motor do bot em `src/services/bot/`,
+  fluxos `menu`, `faq`, `booking`, `my_appointments` e `triage`,
+  repositórios da clínica em `src/services/clinic/` e integração no webhook
+  (o `faqBot` antigo e a agenda em `public` ficam no repositório, desligados).
+- **Banco:** migrations 010–014 aplicadas no Neon production em 2026-11-18,
+  cada uma testada antes num branch temporário do Neon. A grade da
+  `clinica_simulada` foi estendida até 17/01/2027. Pacientes de demonstração:
+  ids 2680–2684 (Ana, Bruno, Carla, Diego e Elisa Teste; CPFs no
+  `docs/POC_DEMO_SCRIPT.md`).
+- **Validado:** `npm run check` e `npm test` verdes; testes de rota ponta a
+  ponta com pool e cliente Infobip falsos; teste de fumaça das escritas
+  (reserva, disputa pela última vaga, remarcação, cancelamento, auditoria)
+  num branch temporário do Neon.
+- **CPF:** mascarado antes de gravar (`messages.body`, `contacts.profile_name`);
+  nunca aparece em logs nem em respostas.
+- **Ainda não feito:** deploy na Vercel, ensaio no número de teste (G3),
+  páginas do Power BI sobre as views `reporting.bot_*`. Lembretes (T19) em
+  andamento, atrás de flag desligada. O simulador de conversas (T21) foi
+  cortado.
 
 ## Estado atual — 2026-11-17 (agenda e BI)
 

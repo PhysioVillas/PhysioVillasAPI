@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-**API-01 is complete locally.** The Express/ESM scaffold exports the
-application, `GET /health` is implemented, and Swagger UI is available at
-`/docs` with its OpenAPI 3.1 specification at `/docs.json`. The recorded local
-validation passed `npm run check` and `npm test` (27/27 tests) on 2026-09-19.
+**POC chatbot implemented (2026-11-18).** Waves 1–5 of `plan-backlog.md` are
+merged: the bot engine answers the inbound webhook, books/reschedules/cancels
+on the mock clinic in `clinica_simulada`, and migrations 010–014 are applied
+to Neon production. Local validation: `npm run check` and `npm test` green.
+Pending: Vercel deploy and the rehearsal on the test number (G3).
 
 One Infobip sandbox template request was accepted (HTTP 200) and received by
 the verified trial recipient on 2026-09-18. It used the platform's dedicated
@@ -20,7 +21,8 @@ remaining gaps for payloads, webhook security, and template contracts.
 `docs/INFOBIP_AUTOMATIONS.md` is the versioned configuration package for
 AUT-01 through AUT-04. The repository has a validation-only Messages API
 client, a protected webhook receiver, and a versioned initial database
-migration; none sends messages or connects to a live database by default.
+migration set; the inbound webhook now runs the bot and sends session replies
+when `DATABASE_URL` and the Infobip send config exist.
 Before writing further integration code, read:
 
 - `docs/PRD_PhysioVilas_WhatsApp.md` — the single source of truth, product
@@ -59,45 +61,89 @@ the user asking:
 
 ## Architecture
 
-**Backend-only, no frontend, no end-user login, no bot logic in code.** The project is
-reduced to a connector between Infobip (WhatsApp channel, FAQ/bot, templates
-— all configured on Infobip's platform, not here) and Neon (Postgres), plus
-outbound sends back through Infobip. Reading/reporting on the data happens in
-Power BI, connected directly to Neon — this repo has no read/list endpoints.
+**Backend-only, no frontend, no end-user login.** The backend connects
+Infobip (WhatsApp channel and templates) to Neon (Postgres) and, since the
+POC (2026-11-18), runs the **patient chatbot in code** (see "Bot engine"
+below). Reading/reporting happens in Power BI, connected directly to Neon —
+this repo has no read/list endpoints.
 
 ```
 Patient (WhatsApp) → Infobip → POST /webhooks/infobip/inbound → backend → Neon
-                                                               ↖ POST /messages/validate → Infobip validation API
-Power BI → direct Postgres connection → Neon
+                                     ↓ bot engine (flows)          ↑ public + clinica_simulada
+                     Infobip dedicated WhatsApp API ← replies
+Power BI → direct Postgres connection → Neon (public, reporting, bi_simulado)
 ```
 
-Planned stack: Node.js + Express (ESM, `"type": "module"`, same style as the
-removed backend), packaged as a Vercel Serverless Function (no Next.js — API
-only). No Socket.io, no real-time layer — there is no UI to push updates to.
+Stack: Node.js + Express (ESM, `"type": "module"`), packaged as a Vercel
+Serverless Function (no Next.js — API only). No Socket.io, no real-time layer.
 
 Routes:
 - `GET /health` — health check.
 - `GET /docs` and `GET /docs.json` — Swagger UI and OpenAPI specification.
-- `POST /webhooks/infobip/inbound` — receives the documented inbound envelope.
-  It needs the database configured and, during the POC, accepts requests
-  without authentication (see "POC decisions").
+- `POST /webhooks/infobip/inbound` — receives the inbound envelope, persists
+  it (CPF masked) and runs the bot. Needs the database configured and, during
+  the POC, accepts requests without authentication (see "POC decisions").
 - `POST /messages/validate` — protected, validation-only endpoint for text and
-  optional `sendAt`; there is no send route or real send implementation.
+  optional `sendAt`.
 
-### FAQ bot (exception to "no bot logic in code", added 2026-10-21)
+### Bot engine (replaces the old FAQ bot, 2026-11-18)
 
-`src/services/faqBot.js` answers patient messages arriving at the inbound
-webhook: TEXT → main menu (interactive list), list option → FAQ answer with
-buttons or handoff text, `btn_voltar_menu`/`btn_atendente` buttons. Content
-lives in `src/config/faqContent.js` (answers marked `[PREENCHER]` still need
-clinic approval). These session replies use the **dedicated WhatsApp API**
-(`/whatsapp/1/message/text|interactive/list|interactive/buttons`), not the
-Messages API, so the API key needs a WhatsApp send scope. There are no bot
-env vars: the bot answers every contact whenever `DATABASE_URL` and the
-Infobip send config exist (the system has no real patients yet). It stays
-silent on text for 12 h (`HANDOFF_SILENCE_HOURS`) after a handoff or a team
-reply from the Business App; the keyword `MENU` always brings the menu back. Replies are stored with `message_type` `faq_menu`,
-`faq_answer` or `faq_handoff`, and set `conversations.current_intent`.
+Wired in `src/services/bot/index.js` (`createBot`) and called from
+`src/routes/infobipWebhooks.js` only for newly inserted inbound messages (an
+Infobip retry with the same `messageId` never gets a second reply).
+
+- **Engine** `src/services/bot/engine.js` — state machine; its header comment
+  is the flow contract. Order: open handoff → silence (MENU reopens);
+  urgency → SAMU 192 text + handoff; human/payment/clinical/document intents →
+  handoff; `<flow>:<step>|<value>` ids → owning flow; active state → flow;
+  otherwise menu. It returns replies and never sends.
+- **Flows** `src/services/bot/flows/`: `menu`, `faq`, `booking`,
+  `my_appointments` (CPF, reschedule, cancel, 24 h rule) and `triage` (new
+  patient signup). No generative AI answers patients.
+- **Support modules**: `intents.js` (keywords; bare "dor" is not clinical),
+  `cpf.js`, `businessHours.js`, `replies.js` (WhatsApp limits, list paging),
+  `stateStore.js` (`conversation_state`), `handoffRepository.js` (`handoffs`),
+  `sender.js` (replies → dedicated WhatsApp API
+  `/whatsapp/1/message/text|interactive/list|interactive/buttons`; the API key
+  needs a WhatsApp send scope), `src/config/botConfig.js` (`bot_config` table,
+  60 s cache, defaults when missing).
+- **Clinic repositories** `src/services/clinic/` read and write the mock
+  clinic in schema `clinica_simulada`: `catalogRepository.js`,
+  `appointmentRepository.js` (advisory lock per slot, 24 h rules, audit to
+  `clinica_simulada.audit_log` with `actor_scope='chatbot'`, one
+  `clinica_simulada.conversations` row per booking because
+  `agendamento_chatbot.conversation_id` is unique) and `patientRepository.js`.
+  `db/poc/clinica_simulada_schema.sql` is a reference snapshot of that schema
+  (not a migration).
+- **CPF is never persisted in clear**: the webhook masks it
+  (`***.***.***-NN`) in `messages.body` and `contacts.profile_name`; the engine
+  sees the original only in memory; nothing logs CPF or names.
+- **Silence**: the bot stays silent for `handoff_silence_hours` (12 h) while a
+  handoff is open. A team reply from the Business App opens a
+  `team_takeover` handoff if none is open. The keyword `MENU` closes the
+  handoff and brings the menu back.
+- **Persistence for BI**: replies keep the old `message_type` values (lists →
+  `faq_menu`, text/buttons → `faq_answer`, handoff text → `faq_handoff`);
+  `conversations.current_intent` follows the flow; each reply writes a
+  `whatsapp_flow_events` `bot_step_sent` row with `step_key = '<flow>:<step>'`
+  (allowed by migration 014). Views in `reporting.bot_*` (014) feed Power BI.
+- **Runtime config** lives in table `bot_config` (support hours, 24 h notice,
+  CPF attempts, timeouts), not in env vars.
+- The old `src/services/faqBot.js` and the `public` agenda path
+  (`appointmentService.js`) are kept in the repo but no longer wired.
+- Demo walkthrough: `docs/POC_DEMO_SCRIPT.md`. Wave plan and decisions:
+  `plan.md`, `plan-backlog.md`.
+
+### Migrations
+
+`npm run migrate` applies `db/migrations/*.sql` in order and records each
+file's checksum in `schema_migrations` — never edit an applied migration.
+010–014 (bot runtime, clinic POC prep, schedule extension, FAQ content, bot
+reporting) were applied to Neon production on 2026-11-18. Anything touching
+`clinica_simulada` must sit inside
+`do $$ begin if to_regnamespace('clinica_simulada') is not null then … end if; end $$;`
+so preview databases without that schema still migrate.
+`npm run extend-schedule` extends the mock clinic calendar/capacity.
 
 ### Schema is a public interface
 
@@ -141,8 +187,9 @@ unresolved gap (`PRD_PhysioVilas_WhatsApp.md` section 4.3/4.4,
   User provided and verified a working example payload — see
   `PRD_PhysioVilas_WhatsApp.md` section 4.4. **Decision: this Messages API
   is now the single client used for all sends** (text, template, and
-  scheduled) — not just for scheduling — so there is no separate WhatsApp-
-  dedicated send client. What's still unconfirmed and must be verified
+  scheduled) — not just for scheduling. Exception: the bot's interactive
+  session replies (text, lists, buttons) go through the dedicated WhatsApp
+  API, as described in "Bot engine". What's still unconfirmed and must be verified
   against the real account before implementing `API-03`/`API-05`: the exact
   `content` shape for templates, whether the Messages API's inbound webhook
   (patient replies) matches the dedicated WhatsApp API's format or needs its
@@ -160,8 +207,12 @@ npm run start
 npm run dev
 npm run check
 npm test
+npm run migrate
+npm run extend-schedule
 ```
 
-Run `npm run check` and `npm test` after every code change. The test suite
-covers health, OpenAPI, protected webhook and validation routes, Infobip
-validation payloads, and database schema invariants.
+Run `npm run check` and `npm test` after every code change. `npm run check`
+syntax-checks every `.js` under `src/` and `scripts/` (`scripts/check.js`).
+The test suite covers health, OpenAPI, webhook and validation routes, the bot
+engine and flows (fake pool and fake Infobip client), clinic repositories,
+Infobip payloads and migration/schema invariants.

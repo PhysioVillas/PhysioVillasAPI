@@ -1,8 +1,9 @@
 # Plano — POC de chatbot autossuficiente sobre a `clinica_simulada`
 
 > Documento de planejamento, revisado em 2026-11-18 com as decisões da
-> seção 2. Nada aqui está implementado. Objetivo final: apresentação da POC
-> aos investidores do projeto.
+> seção 2. **Fases 0 a 4 implementadas em 2026-11-18** (ver seção 11 e
+> `plan-backlog.md`); migrations 010–014 aplicadas no Neon production.
+> Objetivo final: apresentação da POC aos investidores do projeto.
 >
 > **Escopo:** é uma **POC**. O bot funciona sozinho em cima dos dados mock do
 > schema `clinica_simulada` no Neon, lendo **e escrevendo** neles, para mostrar
@@ -341,14 +342,14 @@ a equipe. Faltas: ~6% com lembrete confirmado, ~35% sem confirmação.
 
 ## 11. Fases
 
-| Fase | Entrega |
-|---|---|
-| **0. Dados** | Migration ou script da POC: sequences, `d_pacientes.cpf` + CPFs fictícios + pacientes de demonstração, `d_precos`, `bot_config`, `conversation_state`, `handoffs`, permissões. Script de extensão da grade (`f_capacidade` + `d_calendario`) com execução diária. Textos mock em `faq_entries` |
-| **1. Motor e FAQ** | Máquina de estados, menu novo, FAQ lido do banco, handoff com motivos, horários do `bot_config`, eventos de fluxo para todas as etapas |
-| **2. Agenda** | Marcar (contato já conhecido), CPF, minhas consultas, remarcar e cancelar com a regra de 24 h, `audit_log` |
-| **3. Paciente novo** | Triagem + cadastro + `f_leads` com etapa e abandono |
-| **4. Métricas** | Views em `reporting` e páginas do Power BI para a apresentação |
-| **5. Mensagens ativas** | Lembretes com confirmação e encaixe (depende de templates aprovados) |
+| Fase | Entrega | Status (2026-11-18) |
+|---|---|---|
+| **0. Dados** | Migration ou script da POC: sequences, `d_pacientes.cpf` + CPFs fictícios + pacientes de demonstração, `d_precos`, `bot_config`, `conversation_state`, `handoffs`, permissões. Script de extensão da grade (`f_capacidade` + `d_calendario`) com execução diária. Textos mock em `faq_entries` | Feito: migrations 010–012 + `npm run extend-schedule` (grade até 17/01/2027) |
+| **1. Motor e FAQ** | Máquina de estados, menu novo, FAQ lido do banco, handoff com motivos, horários do `bot_config`, eventos de fluxo para todas as etapas | Feito: `src/services/bot/engine.js`, fluxos `menu`/`faq`, migration 013 |
+| **2. Agenda** | Marcar (contato já conhecido), CPF, minhas consultas, remarcar e cancelar com a regra de 24 h, `audit_log` | Feito: fluxos `booking` e `my_appointments`, `appointmentRepository.js` |
+| **3. Paciente novo** | Triagem + cadastro + `f_leads` com etapa e abandono | Feito: fluxo `triage`, `patientRepository.js` |
+| **4. Métricas** | Views em `reporting` e páginas do Power BI para a apresentação | Feito: views `reporting.bot_*` (migration 014); páginas do Power BI pendentes |
+| **5. Mensagens ativas** | Lembretes com confirmação e encaixe (depende de templates aprovados) | Em andamento (T19), atrás de flag desligada até confirmar o template |
 
 Cada fase entra com testes (`npm run check`, `npm test`) e atualiza
 `docs/IMPLEMENTATION_STATUS.md` e `CLAUDE.md`, porque a regra "sem lógica de
