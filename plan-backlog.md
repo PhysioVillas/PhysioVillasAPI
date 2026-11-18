@@ -164,7 +164,8 @@ O contrato completo está no cabeçalho de `src/services/bot/engine.js`. Resumo:
 - **Dupla reserva** (T10): o repositório não impede o mesmo paciente de reservar o mesmo horário duas vezes; o fluxo confere `listUpcoming` antes de confirmar.
 - **Remarcar para o mesmo horário** (T10) conta a consulta original como ocupada; o fluxo não oferece o horário atual.
 - **`jornada_contatos.origem`** (T11): o CHECK só aceita `lead_planilha` e `paciente_sem_lead`; não existe `'chatbot'`.
-- **SQL de escrita do T10/T11 ainda não rodou no Postgres**: teste de fumaça num branch temporário do Neon antes do G2.
+- **SQL de escrita do T10/T11 validado** em 2026-11-18 num branch temporário do Neon (já apagado): lead, contato, paciente novo, CPF duplicado, reservas, corrida na última vaga (6 ok + 1 `slot_unavailable`), remarcação, cancelamento, `not_found`, `too_late` e auditoria. Reserva no mesmo dia é permitida (o plano só exige 24 h para remarcar e cancelar).
+- **Pacientes de demonstração** passam a se chamar Ana, Bruno, Carla, Diego e Elisa Teste (migration 013), para a saudação usar o primeiro nome.
 
 ### 3.4 Etapas de lead (`f_leads.etapa_final`)
 
