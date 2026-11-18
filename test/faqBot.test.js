@@ -223,6 +223,13 @@ test('a FAQ list option is answered with the back-to-menu and team buttons', asy
   assert.equal(database.persisted[0].messageType, 'faq_answer');
 });
 
+test('FAQ answers are usable without publishing unconfirmed clinic details', () => {
+  for (const answer of Object.values(faqContent.faqAnswers)) {
+    assert.doesNotMatch(answer, /\[PREENCHER\]/);
+    assert.match(answer, /equipe/i);
+  }
+});
+
 test('handoff options send a text and mark the conversation for the team', async () => {
   const { bot, client, database } = botWith();
 

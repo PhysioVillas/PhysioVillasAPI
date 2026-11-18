@@ -77,6 +77,43 @@ intervalos com timestamps ambíguos. O bot não conta como resposta humana.
 A migration 008 inclui índice parcial por conversa e instante para apoiar os
 pareamentos sem expor identificadores na view.
 
+## Agenda (migration 009)
+
+`009_appointments.sql` cria `appointment_requests` para pedidos recebidos,
+`appointments` para o estado atual de cada consulta e `appointment_events`
+para o histórico append-only de pedido, confirmação, cancelamento, remarcação e
+comparecimento. Quatro views analíticas agregam pedidos, estado atual, eventos
+e capacidade em hora local `America/Bahia`, sem expor contatos ou conteúdo de
+mensagens. A migration foi validada em PostgreSQL descartável e aplicada no
+Neon após a reconciliação de 001–008.
+
+A clínica definiu que duas consultas não podem se sobrepor quando são do mesmo
+profissional, mas podem ocorrer no mesmo horário se forem com profissionais
+diferentes. A exceção é fisioterapia: até seis pacientes podem ocupar o mesmo
+bloco de 30 minutos, inclusive com o mesmo fisioterapeuta. A clínica também
+informou a grade de segunda a sexta, os profissionais e os serviços. A
+migration 009 cadastrou esses dados no Neon. A API usa o catálogo e
+`reporting.appointment_slot_capacity_metrics` para listar as opções do WhatsApp
+e validar a vaga antes de registrar a solicitação.
+Um pedido não reserva definitivamente o horário: a equipe precisa confirmar.
+Na confirmação, um trigger valida novamente grade, duração e capacidade sob
+lock transacional, para impedir conflito em confirmações concorrentes.
+
+Grade informada (hora local `America/Bahia`):
+
+| Serviço | Profissionais | Duração | Horários (segunda a sexta) | Capacidade por faixa |
+|---|---|---:|---|---:|
+| Fisioterapia | Moisés e Antônio | 30 min | 07:30–12:00 e 14:00–18:30 | 6 pacientes por faixa, inclusive com o mesmo profissional |
+| RPG | Luarca | 30 min | 07:30–12:00 e 14:00–18:30 | 1 por profissional |
+| URO | Camila | 30 min | 07:30–12:00 e 14:00–18:30 | 1 por profissional |
+| Pilates | Luarca | 60 min | 07:00–12:00 e 14:00–17:00 | 1 por profissional |
+
+Como Luarca atende RPG e Pilates, a validação de conflitos impede cruzamento
+entre essas duas modalidades para ela, mesmo que seus intervalos tenham
+durações diferentes. A fisioterapia aplica capacidade de seis no total por
+faixa; essa capacidade aceita os seis pacientes inclusive com o mesmo
+fisioterapeuta. O BI mostra ocupação e vagas restantes com o mesmo escopo.
+
 ## Sequência de migrações
 
 1. `001_initial_schema.sql` cria o módulo operacional e seus índices.
@@ -94,14 +131,18 @@ pareamentos sem expor identificadores na view.
    a visão agregada diária para o BI.
 8. `008_human_response_reporting.sql` acrescenta a visão agregada de tempos de
    resposta humana.
+9. `009_appointments.sql` cria catálogo, grade semanal, pedidos, consultas,
+   histórico append-only, restrições de capacidade/conflito e views agregadas
+   da agenda. Foi validada localmente; a aplicação no Neon aguarda reconciliação
+   do ledger para não repetir as migrations anteriores.
 
 As migrações são aplicadas pelo administrador do Neon, em ordem, com uma
 conexão SSL. Elas não criam uma conta, banco externo, usuário ou senha.
 
 ## Dados deliberadamente fora do modelo
 
-- agenda clínica, disponibilidade e referências de consulta: dependem de uma
-  fonte de agenda definida;
+- disponibilidade não é reserva: pedidos aguardam confirmação explícita da
+  equipe; a migration 009 precisa estar aplicada em produção para a agenda real;
 - queixa, diagnóstico, histórico, arquivos e resultados: não coletar nem
   persistir no fluxo automático;
 - credenciais, chaves, URLs completas e números de telefone em configurações

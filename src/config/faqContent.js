@@ -1,10 +1,9 @@
 // Conteúdo do bot de FAQ/autoatendimento enviado pelo WhatsApp.
 //
 // ATENÇÃO: o bot responde a qualquer contato assim que a API está configurada.
-// Os textos marcados com [PREENCHER] precisam ser substituídos por
-// informações aprovadas pela clínica antes de o número receber pacientes
-// reais. Não incluir orientação clínica, diagnóstico ou preços individuais
-// (ver docs/INFOBIP_AUTOMATIONS.md, AUT-03).
+// Como endereço, horários, convênios e serviços ainda não foram confirmados
+// aqui, as respostas encaminham a pessoa à equipe em vez de inventar dados.
+// Não incluir orientação clínica, diagnóstico ou preços individuais.
 //
 // Limites do WhatsApp verificados em test/faqBot.test.js:
 // título da linha <= 24, descrição <= 72, título de seção <= 24,
@@ -30,8 +29,8 @@ const mainMenu = {
       rows: [
         {
           id: 'menu_agendar',
-          title: 'Agendar ou remarcar',
-          description: 'A equipe confirma a disponibilidade com você',
+          title: 'Agendar consulta',
+          description: 'Escolha o serviço, profissional, dia e horário',
         },
         {
           id: 'menu_paciente_novo',
@@ -41,7 +40,7 @@ const mainMenu = {
         {
           id: 'menu_atendente',
           title: 'Falar com a equipe',
-          description: 'Atendimento com uma pessoa da nossa equipe',
+          description: 'Remarcações, cancelamentos e atendimento humano',
         },
       ],
     },
@@ -76,19 +75,17 @@ const mainMenu = {
 // Respostas das linhas de "Dúvidas frequentes": enviadas com os botões
 // "Voltar ao menu" e "Falar com a equipe".
 const faqAnswers = {
-  faq_horarios: '🕒 Horários de atendimento\n\n[PREENCHER: dias e horários aprovados pela clínica]',
-  faq_convenios: '💳 Convênios e pagamento\n\n[PREENCHER: convênios aceitos e formas de pagamento aprovados pela clínica]',
-  faq_localizacao: '📍 Localização\n\n[PREENCHER: endereço completo e referência aprovados pela clínica]',
-  faq_servicos: '🩺 Serviços\n\n[PREENCHER: lista de serviços aprovada pela clínica]',
+  faq_horarios: '🕒 Para consultar os próximos horários por serviço e profissional, volte ao menu e toque em "Agendar consulta". A equipe confirma seu pedido por aqui.',
+  faq_convenios: '💳 Convênios e pagamento\n\nNossa equipe confirma os convênios aceitos e as formas de pagamento disponíveis. Toque em "Falar com a equipe".',
+  faq_localizacao: '📍 Localização\n\nNossa equipe envia o endereço atualizado e orientações para chegar. Toque em "Falar com a equipe".',
+  faq_servicos: '🩺 Para ver os serviços e profissionais da agenda, volte ao menu e toque em "Agendar consulta". Nossa equipe pode ajudar se você tiver dúvidas sobre o atendimento.',
 };
 
 // Opções que encaminham para a equipe humana. Depois delas o bot fica em
 // silêncio para o contato por 12 h (HANDOFF_SILENCE_HOURS em
 // src/services/faqBot.js) até ele pedir o menu.
 const handoffReplies = {
-  menu_agendar: 'Certo! Para agendar ou remarcar, envie por aqui o melhor dia e período para você. '
-    + 'Nossa equipe vai confirmar a disponibilidade em breve.\n\n'
-    + 'Para voltar ao menu, envie MENU.',
+  menu_agendar: 'A agenda automática está indisponível neste momento. Nossa equipe pode ajudar a escolher um horário por aqui.',
   menu_paciente_novo: 'Seja bem-vindo(a)! Envie seu nome e o motivo do contato '
     + '(por exemplo: "quero marcar uma avaliação"). Nossa equipe continua o atendimento por aqui.\n\n'
     + 'Para voltar ao menu, envie MENU.',

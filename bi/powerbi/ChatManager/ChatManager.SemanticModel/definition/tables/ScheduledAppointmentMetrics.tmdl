@@ -1,0 +1,78 @@
+table ScheduledAppointmentMetrics
+	lineageTag: d633dcfd-3de1-4244-a6a9-cdcd364fd80f
+
+	column scheduled_date
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 3494d751-1059-4d47-a265-3324f31ca4f4
+		summarizeBy: none
+		sourceColumn: scheduled_date
+		annotation UnderlyingDateTimeDataType = Date
+
+	column scheduled_time
+		dataType: string
+		lineageTag: 6b9a79d7-a29f-4d1c-900c-d7e1cc1f8f44
+		summarizeBy: none
+		sourceColumn: scheduled_time
+
+	column scheduled_end_time
+		dataType: string
+		lineageTag: 903eccf9-62a9-4205-b03f-b6a46f3c4b12
+		summarizeBy: none
+		sourceColumn: scheduled_end_time
+
+	column status
+		dataType: string
+		lineageTag: 7378d27f-a854-4d36-90d2-89ecafc12b85
+		summarizeBy: none
+		sourceColumn: status
+
+	column attendance_status
+		dataType: string
+		lineageTag: 717852b6-9af2-4da8-a8a1-c56fd143be1c
+		summarizeBy: none
+		sourceColumn: attendance_status
+
+	column service_code
+		dataType: string
+		lineageTag: 88988e2a-e212-4eeb-9019-995fa8f96119
+		summarizeBy: none
+		sourceColumn: service_code
+
+	column service_name
+		dataType: string
+		lineageTag: d282224c-2f6a-43cb-b008-e6a94d74bf32
+		summarizeBy: none
+		sourceColumn: service_name
+
+	column professional_code
+		dataType: string
+		lineageTag: 52ed74e8-6ac2-4c8b-b68b-f36161ea2e76
+		summarizeBy: none
+		sourceColumn: professional_code
+
+	column professional_name
+		dataType: string
+		lineageTag: c4f29234-f4c3-46e4-8a91-ad5c7ee0a2c7
+		summarizeBy: none
+		sourceColumn: professional_name
+
+	column appointment_count
+		dataType: int64
+		formatString: #,0
+		lineageTag: 1e4e9878-5b57-4540-a3e9-b6e5cd8e0239
+		summarizeBy: sum
+		sourceColumn: appointment_count
+
+	partition ScheduledAppointmentMetrics = m
+		mode: import
+		source =
+				let
+					Source = PostgreSQL.Database(NeonServer, NeonDatabase),
+					ReportingView = Source{[Schema = "reporting", Item = "scheduled_appointment_metrics"]}[Data],
+					TypedColumns = Table.TransformColumnTypes(ReportingView, {{"scheduled_date", type date}, {"scheduled_time", type time}, {"scheduled_end_time", type time}, {"status", type text}, {"attendance_status", type text}, {"service_code", type text}, {"service_name", type text}, {"professional_code", type text}, {"professional_name", type text}, {"appointment_count", Int64.Type}}),
+					FormattedTimes = Table.TransformColumns(TypedColumns, {{"scheduled_time", each Time.ToText(_, "HH:mm"), type text}, {"scheduled_end_time", each Time.ToText(_, "HH:mm"), type text}})
+				in
+					FormattedTimes
+
+	annotation PBI_ResultType = Table

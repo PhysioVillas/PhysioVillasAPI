@@ -62,6 +62,25 @@ test('insertMessage is parameterized and ignores a duplicate Infobip message ide
   ]);
 });
 
+test('findPersistedMessageIdByInfobipId resolves only the local message id with a parameterized query', async () => {
+  const pool = {
+    calls: [],
+    query: async (query) => {
+      pool.calls.push(query);
+      return { rows: [{ id: 'internal-message-id' }] };
+    },
+  };
+  const database = createDatabase({ pool });
+
+  const result = await database.findPersistedMessageIdByInfobipId('provider-message-id');
+
+  assert.equal(result, 'internal-message-id');
+  assert.deepEqual(pool.calls, [{
+    text: 'select id from messages where infobip_message_id = $1',
+    values: ['provider-message-id'],
+  }]);
+});
+
 test('recordDeliveryStatus updates only the known outbound message', async () => {
   const pool = createPool();
   const database = createDatabase({ pool });
@@ -154,6 +173,13 @@ test('verifySchema requires the operational tables and reporting view', async ()
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
           human_response_reporting_view_exists: true,
+          appointment_requests_exists: true,
+          appointments_exists: true,
+          appointment_events_exists: true,
+          appointment_event_reporting_view_exists: true,
+          appointment_request_reporting_view_exists: true,
+          scheduled_appointment_reporting_view_exists: true,
+          appointment_slot_capacity_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       };
@@ -168,6 +194,9 @@ test('verifySchema requires the operational tables and reporting view', async ()
   assert.match(pool.calls[0].text, /conversations_one_open_per_contact_idx/i);
   assert.match(pool.calls[0].text, /reporting\.daily_message_metrics/i);
   assert.match(pool.calls[0].text, /reporting\.daily_whatsapp_flow_metrics/i);
+  assert.match(pool.calls[0].text, /public\.appointment_requests/i);
+  assert.match(pool.calls[0].text, /reporting\.scheduled_appointment_metrics/i);
+  assert.match(pool.calls[0].text, /reporting\.appointment_slot_capacity_metrics/i);
   assert.match(pool.calls[0].text, /column_name = 'status_updated_at'/i);
 });
 
@@ -183,6 +212,13 @@ test('verifySchema rejects an incomplete database before webhooks are accepted',
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
           human_response_reporting_view_exists: true,
+          appointment_requests_exists: true,
+          appointments_exists: true,
+          appointment_events_exists: true,
+          appointment_event_reporting_view_exists: true,
+          appointment_request_reporting_view_exists: true,
+          scheduled_appointment_reporting_view_exists: true,
+          appointment_slot_capacity_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       }),
@@ -204,6 +240,13 @@ test('verifySchema requires the status-update column before delivery reports are
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
           human_response_reporting_view_exists: true,
+          appointment_requests_exists: true,
+          appointments_exists: true,
+          appointment_events_exists: true,
+          appointment_event_reporting_view_exists: true,
+          appointment_request_reporting_view_exists: true,
+          scheduled_appointment_reporting_view_exists: true,
+          appointment_slot_capacity_reporting_view_exists: true,
           delivery_status_column_exists: false,
         }],
       }),
@@ -225,6 +268,13 @@ test('verifySchema requires the human response reporting view', async () => {
           reporting_view_exists: true,
           flow_reporting_view_exists: true,
           human_response_reporting_view_exists: false,
+          appointment_requests_exists: true,
+          appointments_exists: true,
+          appointment_events_exists: true,
+          appointment_event_reporting_view_exists: true,
+          appointment_request_reporting_view_exists: true,
+          scheduled_appointment_reporting_view_exists: true,
+          appointment_slot_capacity_reporting_view_exists: true,
           delivery_status_column_exists: true,
         }],
       }),

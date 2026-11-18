@@ -21,12 +21,13 @@ async function readMigrations(migrationsDirectory) {
     .sort();
 
   return Promise.all(fileNames.map(async (fileName) => {
-    const sql = await readFile(join(migrationsDirectory, fileName), 'utf8');
+    const sql = (await readFile(join(migrationsDirectory, fileName), 'utf8')).replace(/\r\n/g, '\n');
 
     return {
       fileName,
       sql,
       checksum: createHash('sha256').update(sql).digest('hex'),
+      legacyWindowsChecksum: createHash('sha256').update(sql.replace(/\n/g, '\r\n')).digest('hex'),
     };
   }));
 }
@@ -52,7 +53,8 @@ async function applyMigration(client, migration) {
     });
 
     if (existing.rows.length > 0) {
-      if (existing.rows[0].checksum !== migration.checksum) {
+      const existingChecksum = existing.rows[0].checksum;
+      if (existingChecksum !== migration.checksum && existingChecksum !== migration.legacyWindowsChecksum) {
         throw new Error(`Migration checksum changed: ${migration.fileName}`);
       }
 

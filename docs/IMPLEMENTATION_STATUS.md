@@ -2,6 +2,52 @@
 
 **Data do registro:** 2026-09-20
 
+## Estado atual — 2026-11-17 (agenda e BI)
+
+Esta seção substitui afirmações antigas abaixo quando houver conflito. O
+repositório local contém uma implementação de agenda pelo WhatsApp e um modelo
+Power BI preparado para ler métricas agregadas; isso ainda não significa que
+essas partes estejam aplicadas ou funcionando em produção.
+
+- **Agenda/API local:** `db/migrations/009_appointments.sql` define pedidos,
+  consultas, histórico de eventos e views agregadas. A grade de segunda a
+  sexta e as capacidades definidas pela clínica vêm do Neon. A opção
+  **Agendar consulta** abre listas do WhatsApp para escolher serviço,
+  profissional, dia e horário. A equipe confirma no WhatsApp Business.
+  A confirmação volta a validar conflitos e capacidade
+  no banco. A regra de fisioterapia é até seis pacientes simultâneos por faixa
+  de 30 minutos, inclusive com o mesmo fisioterapeuta; RPG/Pilates com Luarca
+  compartilham a restrição de não sobreposição.
+- **Segurança do webhook:** `src/middleware/infobipWebhookAuth.js` valida
+  autenticação HMAC sobre o corpo original quando configurada e impede que o
+  token legado contorne uma assinatura inválida. A produção ainda não tem
+  confirmação de segredo HMAC correspondente configurado na Vercel e no
+  provedor. Não ativar comandos que alterem consultas nem publicar esta versão
+  antes de validar uma chamada autenticada real.
+- **BI:** o PBIP em `bi/powerbi/ChatManager/` inclui tabelas semânticas e
+  páginas para mensagens, fluxo, respostas humanas e agenda. A agenda traz
+  pedidos, estados, eventos, profissional/serviço e ocupação de vagas. O BI
+  deve usar apenas as views agregadas `reporting`, com uma credencial
+  somente leitura. A atualização no Power BI Desktop carregou as três páginas
+  com a conexão do Neon. A agenda mostrou horários disponíveis nos próximos
+  30 dias. A sessão do Service oferece apenas o workspace pessoal; falta
+  publicar no workspace de destino e validar a atualização agendada.
+- **Produção/Neon:** as definições de colunas, índices, restrições e views
+  coincidiram com um PostgreSQL descartável preparado com 001–008. O histórico
+  legado foi registrado e a migration 009 foi aplicada na mesma transação.
+  A verificação confirmou nove registros no histórico, 40 janelas semanais e
+  as quatro novas views legíveis pela conta de BI. O executor calcula os
+  checksums com finais de linha LF em Windows e Linux.
+- **Validação local:** `npm test` passou com 129 testes, `npm run check` passou
+  e `npm audit --omit=dev` reportou zero vulnerabilidades. Isso não substitui
+  homologação com webhook assinado, atualização do Power BI conectado ao Neon,
+  nem validação de produção.
+
+**Liberação da API:** o merge em `main` pode acionar a Vercel. Antes disso,
+valide a assinatura no perfil de notificação da Infobip e a configuração na
+Vercel para preservar o recebimento de mensagens. O acesso ao menu pode ser
+validado no número da clínica após a publicação autenticada.
+
 ## Atualização — 2026-10-21: bot de FAQ no backend
 
 Por decisão do time, o FAQ/autoatendimento passou a ser executado pelo

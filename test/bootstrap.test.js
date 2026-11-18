@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import test from 'node:test';
 import { createRuntimeApp } from '../src/bootstrap.js';
 
@@ -41,7 +42,7 @@ test('runtime remains safely disconnected when no database or Infobip configurat
   assert.equal(clientCreated, false);
 });
 
-test('runtime inbound webhook temporarily accepts unauthenticated requests until an Infobip-compatible auth is chosen', async () => {
+test('runtime rejects unauthenticated inbound webhooks even when the legacy bearer token exists', async () => {
   const calls = [];
   const { app } = createRuntimeApp({
     env: {
@@ -60,18 +61,20 @@ test('runtime inbound webhook temporarily accepts unauthenticated requests until
       body: JSON.stringify({ entry: [] }),
     });
 
-    assert.equal(response.status, 202);
+    assert.equal(response.status, 401);
     assert.equal(calls.length, 0);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
 });
 
-test('runtime wires the FAQ bot as soon as database and Infobip sending are configured', async () => {
+test('runtime wires the FAQ bot behind an authenticated Infobip webhook', async () => {
   const sends = [];
+  const webhookSecret = 'test-webhook-signature-secret';
   const databaseOnly = {
     DATABASE_URL: 'postgres://neon.example/chatmanager',
     INFOBIP_WEBHOOK_TOKEN: 'receiver-token',
+    INFOBIP_WEBHOOK_HMAC_SECRET: webhookSecret,
   };
   const fullyConfigured = {
     ...databaseOnly,
@@ -109,7 +112,12 @@ test('runtime wires the FAQ bot as soon as database and Infobip sending are conf
       await new Promise((resolve) => server.once('listening', resolve));
       const response = await fetch(`http://127.0.0.1:${server.address().port}/webhooks/infobip/inbound`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'X-Hub-Signature': createHmac('sha256', webhookSecret)
+            .update(Buffer.from(JSON.stringify(payload)))
+            .digest('hex'),
+        },
         body: JSON.stringify(payload),
       });
 

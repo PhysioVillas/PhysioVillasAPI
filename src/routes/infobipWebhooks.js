@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { hasExpectedBearerToken } from '../middleware/bearerToken.js';
+import { isAuthenticatedInfobipWebhook } from '../middleware/infobipWebhookAuth.js';
 import { normalizeInfobipWebhookPayload } from '../services/infobipWebhookNormalizer.js';
 
 const MAX_CAPTURED_PAYLOADS = 20;
@@ -13,6 +14,7 @@ async function replyWithFaqBot(faqBot, message) {
       messageType: message.messageType,
       replyId: message.replyId,
       body: message.body,
+      ...(message.appointmentResult === undefined ? {} : { appointmentResult: message.appointmentResult }),
     });
   } catch (error) {
     console.error('FAQ bot reply failed.', {
@@ -26,15 +28,18 @@ async function replyWithFaqBot(faqBot, message) {
 function createInfobipWebhooksRouter({
   database,
   webhookToken,
+  webhookHmacSecret,
+  webhookHmacAlgorithm,
   faqBot,
   captureUnmappedPayloads = false,
-  allowUnauthenticatedInbound = false,
+  appointmentCommandBoundary,
+  appointmentService,
 } = {}) {
   const router = Router();
   const capturedPayloads = [];
 
   router.post('/inbound', async (request, response, next) => {
-    if (database === undefined || typeof webhookToken !== 'string' || webhookToken === '') {
+    if (database === undefined || ((typeof webhookToken !== 'string' || webhookToken === '') && (typeof webhookHmacSecret !== 'string' || webhookHmacSecret === ''))) {
       return response.status(503).json({
         error: {
           code: 'WEBHOOK_NOT_CONFIGURED',
@@ -43,10 +48,13 @@ function createInfobipWebhooksRouter({
       });
     }
 
-    // allowUnauthenticatedInbound (default false) is enabled in production
-    // only as a temporary decision (2026-09-25) until a webhook auth
-    // mechanism compatible with the Infobip subscription is chosen.
-    if (!allowUnauthenticatedInbound && !hasExpectedBearerToken(request, webhookToken)) {
+    const webhookAuthenticated = isAuthenticatedInfobipWebhook(request, {
+      webhookToken,
+      hmacSecret: webhookHmacSecret,
+      hmacAlgorithm: webhookHmacAlgorithm,
+    });
+
+    if (!webhookAuthenticated) {
       return response.status(401).json({
         error: {
           code: 'UNAUTHORIZED_WEBHOOK',
@@ -57,14 +65,49 @@ function createInfobipWebhooksRouter({
 
     try {
       const { inboundMessages, deliveryReports, ignored } = normalizeInfobipWebhookPayload(request.body);
+      const appointmentPrincipal = appointmentCommandBoundary?.createVerifiedWebhookPrincipal({ webhookAuthenticated });
 
       for (const normalized of inboundMessages) {
+        let appointmentResult;
         const persisted = await database.persistWebhookMessage(normalized);
+        let appointmentMessage = persisted?.message ?? null;
+
+        // Appointment effects may have failed after message persistence
+        // committed. On an authenticated retry, recover the stored row ID so
+        // the appointment transaction can safely retry using its idempotency
+        // key. The FAQ bot remains restricted to newly persisted messages.
+        if (
+          appointmentMessage === null &&
+          appointmentPrincipal !== null &&
+          appointmentPrincipal !== undefined &&
+          appointmentService !== undefined &&
+          typeof normalized.message.infobipMessageId === 'string' &&
+          normalized.message.infobipMessageId !== '' &&
+          typeof database.findPersistedMessageIdByInfobipId === 'function'
+        ) {
+          const messageId = await database.findPersistedMessageIdByInfobipId(normalized.message.infobipMessageId);
+          if (messageId !== null && messageId !== undefined) {
+            appointmentMessage = { id: messageId };
+          }
+        }
+
+        if (
+          appointmentPrincipal !== null &&
+          appointmentPrincipal !== undefined &&
+          appointmentService !== undefined &&
+          appointmentMessage !== null
+        ) {
+          appointmentResult = await appointmentService.handleVerifiedWebhookMessage({
+            principal: appointmentPrincipal,
+            message: normalized.message,
+            persistedMessage: appointmentMessage,
+          });
+        }
 
         // Only a newly stored patient message triggers the bot, so an
         // Infobip retry of the same messageId never sends a second reply.
         if (faqBot !== undefined && normalized.message.direction === 'in' && persisted?.message) {
-          await replyWithFaqBot(faqBot, normalized.message);
+          await replyWithFaqBot(faqBot, { ...normalized.message, appointmentResult });
         }
       }
 

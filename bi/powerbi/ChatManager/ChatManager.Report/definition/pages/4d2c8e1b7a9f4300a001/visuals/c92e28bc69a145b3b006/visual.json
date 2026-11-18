@@ -1,0 +1,172 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "c92e28bc69a145b3b006",
+  "position": {
+    "x": 40,
+    "y": 190,
+    "width": 720,
+    "height": 270,
+    "z": 12006,
+    "tabOrder": 12006
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ScheduledAppointmentMetrics"
+                    }
+                  },
+                  "Property": "scheduled_date"
+                }
+              },
+              "queryRef": "ScheduledAppointmentMetrics.scheduled_date",
+              "nativeQueryRef": "scheduled_date",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ScheduledAppointmentMetrics"
+                    }
+                  },
+                  "Property": "scheduled_time"
+                }
+              },
+              "queryRef": "ScheduledAppointmentMetrics.scheduled_time",
+              "nativeQueryRef": "scheduled_time"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Consultas confirmadas"
+                }
+              },
+              "queryRef": "_Medidas.Consultas confirmadas",
+              "nativeQueryRef": "Consultas confirmadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Consultas canceladas"
+                }
+              },
+              "queryRef": "_Medidas.Consultas canceladas",
+              "nativeQueryRef": "Consultas canceladas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Consultas atendidas"
+                }
+              },
+              "queryRef": "_Medidas.Consultas atendidas",
+              "nativeQueryRef": "Consultas atendidas"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "ScheduledAppointmentMetrics"
+                  }
+                },
+                "Property": "scheduled_date"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Consultas por data e hora local'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

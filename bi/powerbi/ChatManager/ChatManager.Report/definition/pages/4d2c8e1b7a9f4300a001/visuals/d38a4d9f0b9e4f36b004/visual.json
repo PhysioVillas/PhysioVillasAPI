@@ -1,0 +1,7 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "d38a4d9f0b9e4f36b004",
+  "position": { "x": 940, "y": 40, "width": 280, "height": 120, "z": 12003, "tabOrder": 12003 },
+  "visual": { "visualType": "cardVisual", "query": { "queryState": { "Data": { "projections": [{ "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "_Medidas" } }, "Property": "Consultas canceladas" } }, "queryRef": "_Medidas.Consultas canceladas", "nativeQueryRef": "Consultas canceladas" }] } } }
+  }
+}

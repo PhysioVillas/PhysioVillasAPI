@@ -1,9 +1,22 @@
 # Backlog do Projeto — PhysioVilas ChatManager
 
-**Última atualização:** 2026-09-20
-**Escopo deste documento:** reestruturação para **Infobip + Neon**, backend
-enxuto sem frontend, sem bot próprio, sem autenticação. Detalhamento técnico
-completo em `PRD_PhysioVilas_WhatsApp.md`.
+> **Status técnico atualizado em 2026-11-17:** a branch de entrega contém agenda
+> pelo WhatsApp, autenticação HMAC do webhook, views agregadas para BI e um
+> modelo PBIP atualizado. O Neon já recebeu a reconciliação 001–008 e a migration
+> 009. O refresh no Desktop foi validado. Falta confirmar a autenticação HMAC
+> na Vercel e no provedor e publicar e validar o refresh no Power BI Service.
+> Veja `IMPLEMENTATION_STATUS.md` e `db/README.md`. Os itens e textos
+> históricos abaixo refletem o planejamento original e não devem ser usados
+> como prova do estado atual sem essa conciliação.
+
+**Última atualização:** 2026-11-17
+**Escopo original (2026-09-20):** este backlog foi criado para Infobip + Neon,
+sem frontend de atendimento. A implementação atual usa o backend para FAQ e
+regras da agenda; a equipe opera pelo WhatsApp Business compartilhado, e o BI
+lê somente views agregadas do Neon. A autenticação e a publicação continuam
+requisitos para produção. A lista detalhada abaixo preserva decisões e estados
+históricos; consulte `IMPLEMENTATION_STATUS.md` antes de tratar um item antigo
+como estado atual.
 
 Estrutura seguida a partir desta atualização: **cronograma da Entrega 2**
 definido pela gestão de projeto, organizado em 4 atividades (`AT1`–`AT4`).

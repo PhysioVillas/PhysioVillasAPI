@@ -34,16 +34,14 @@ function createRuntimeApp({
   const app = createApp({
     database,
     infobipWebhookToken: config.infobip.webhookToken,
+    infobipWebhookHmacSecret: config.infobip.webhookHmacSecret,
+    infobipWebhookHmacAlgorithm: config.infobip.webhookHmacAlgorithm,
     messagesClient,
     whatsappSender: infobipMessagesConfig?.whatsappSender,
+    appointmentConfirmationUtcOffset: config.appointmentConfirmationUtcOffset,
     faqBot,
     chatManagerApiToken: config.chatManagerApiToken,
     captureUnmappedWebhookPayloads: database !== undefined && config.infobip.webhookToken !== undefined,
-    // TEMPORARY (decided 2026-09-25, to be resolved next sprint): the
-    // Infobip subscription only offers Basic/Hmac/OAuth, not our Bearer
-    // header, so production accepts inbound webhooks without authentication
-    // until a permanent mechanism is chosen (SET-07).
-    allowUnauthenticatedInbound: true,
   });
 
   return { app, config };

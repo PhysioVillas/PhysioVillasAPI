@@ -1,0 +1,7 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "27a8e1d5c9b64000b002",
+  "position": { "x": 340, "y": 40, "width": 280, "height": 120, "z": 12001, "tabOrder": 12001 },
+  "visual": { "visualType": "cardVisual", "query": { "queryState": { "Data": { "projections": [{ "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "_Medidas" } }, "Property": "Consultas confirmadas" } }, "queryRef": "_Medidas.Consultas confirmadas", "nativeQueryRef": "Consultas confirmadas" }] } } }
+  }
+}
