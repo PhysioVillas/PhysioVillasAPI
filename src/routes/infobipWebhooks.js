@@ -32,6 +32,7 @@ function createInfobipWebhooksRouter({
   webhookHmacAlgorithm,
   faqBot,
   captureUnmappedPayloads = false,
+  allowUnauthenticatedInbound = false,
   appointmentCommandBoundary,
   appointmentService,
 } = {}) {
@@ -54,7 +55,18 @@ function createInfobipWebhooksRouter({
       hmacAlgorithm: webhookHmacAlgorithm,
     });
 
-    if (!webhookAuthenticated) {
+    // allowUnauthenticatedInbound (padrão false) só é ligado em src/bootstrap.js
+    // porque o sistema ainda é uma POC sem clientes reais. Mesmo assim,
+    // webhookAuthenticated continua false e a agenda não recebe permissão.
+    if (!webhookAuthenticated && allowUnauthenticatedInbound) {
+      // Só os NOMES dos headers (sem valores), para descobrir como a Infobip
+      // assina o webhook quando o HMAC for configurado.
+      console.warn('POC: accepting unauthenticated Infobip webhook.', {
+        headerNames: Object.keys(request.headers ?? {}),
+      });
+    }
+
+    if (!webhookAuthenticated && !allowUnauthenticatedInbound) {
       return response.status(401).json({
         error: {
           code: 'UNAUTHORIZED_WEBHOOK',

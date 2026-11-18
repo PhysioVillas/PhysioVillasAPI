@@ -24,6 +24,14 @@ essas partes estejam aplicadas ou funcionando em produção.
   confirmação de segredo HMAC correspondente configurado na Vercel e no
   provedor. Não ativar comandos que alterem consultas nem publicar esta versão
   antes de validar uma chamada autenticada real.
+- **POC — webhook sem autenticação (2026-11-18):** como o HMAC não estava
+  configurado na Vercel e no provedor, o webhook passou a responder `401` a
+  toda mensagem e o bot parou. Por se tratar de uma POC em teste, sem nenhum
+  cliente real, `src/bootstrap.js` voltou a ligar `allowUnauthenticatedInbound`.
+  Requisições não autenticadas não recebem permissão de agenda: só FAQ/menu e
+  persistência funcionam. O log registra apenas os nomes dos headers recebidos,
+  para identificar a assinatura da Infobip. Remover o bypass antes de qualquer
+  uso com clientes reais.
 - **BI:** o PBIP em `bi/powerbi/ChatManager/` inclui tabelas semânticas e
   páginas para mensagens, fluxo, respostas humanas e agenda. A agenda traz
   pedidos, estados, eventos, profissional/serviço e ocupação de vagas. O BI
