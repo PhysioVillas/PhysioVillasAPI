@@ -261,8 +261,16 @@ sobrescrita no fim:
      - `f_agendamentos(paciente_id, data)`;
      - `f_agendamentos(servico_id, profissional_id, data, hora) where status in ('Agendado','Realizado')`;
      - `jornada_contatos(paciente_id)`.
+  6. `agendamento_chatbot.dispatch_id` passa a aceitar nulo
+     (`alter column dispatch_id drop not null`), porque uma reserva iniciada
+     pelo paciente não tem disparo. Manter o `unique` e a FK (nulos não
+     conflitam no `unique`). Não mexer em `conversation_id`: o T10 cria ou
+     reaproveita a conversa aberta em `clinica_simulada.conversations`
+     (há índice único parcial `wa_id where status='open'`). Achado do T01,
+     decidido em 2026-11-18.
 - **Aceite:**
-  - o teste de regex confere a guarda, as sequences, o `unique` do CPF e `d_precos`;
+  - o teste de regex confere a guarda, as sequences, o `unique` do CPF,
+    `d_precos` e o `drop not null` de `dispatch_id`;
   - via MCP, conferir que nenhum `max(id)` mudou desde o T01 (registre os valores no PR).
 
 #### T06 — Migration 012 e script: estender a grade de horários
@@ -350,7 +358,9 @@ sobrescrita no fim:
       do plano (seção 6.3): `canal_marcacao 'Chatbot'`, `turno` e
       `dia_semana` calculados, `antecedencia_dias`, `valor_sessao` vindo de
       `d_precos` ou do convênio, `primeira_consulta`;
-    - upsert de `clinica_simulada.contacts(wa_id)` e insert em `agendamento_chatbot`;
+    - upsert de `clinica_simulada.contacts(wa_id)`, conversa aberta em
+      `clinica_simulada.conversations` (reaproveitar a aberta ou criar) e
+      insert em `agendamento_chatbot` com `dispatch_id` nulo (T05 libera);
     - `audit_log(actor_scope='chatbot')`.
   - **`reschedule`:** linha nova com `remarcacao_de`; a original vira
     `Cancelado com antecedência`; `too_late` se faltar menos de
