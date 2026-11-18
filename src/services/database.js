@@ -400,6 +400,41 @@ function createDatabase({ connectionString, pool } = {}) {
     };
   }
 
+  async function listAppointmentProfessionals(serviceCode = null) {
+    const { rows } = await resolvedPool.query({
+      text: `select s.service_code as "serviceCode", s.name as "serviceName",
+          p.professional_code as "professionalCode", p.display_name as "professionalName"
+        from appointment_service_professionals sp
+        join appointment_services s using (service_code)
+        join appointment_professionals p using (professional_code)
+        where ($1::text is null or s.service_code = $1)
+        order by s.name, p.display_name`,
+      values: [serviceCode],
+    });
+    return rows;
+  }
+
+  async function listAvailableAppointmentSlots({ serviceCode, professionalCode, date = null }) {
+    const { rows } = await resolvedPool.query({
+      text: `select to_char(grid.slot_date, 'YYYY-MM-DD') as date, left(grid.slot_time::text, 5) as time,
+          (grid.slot_date + grid.slot_time) at time zone 'America/Bahia' as "startsAt",
+          (grid.slot_date + grid.slot_time + make_interval(mins => grid.duration_minutes))
+            at time zone 'America/Bahia' as "endsAt"
+        from reporting.appointment_slot_capacity_metrics grid
+        join appointment_service_professionals sp on sp.service_code = grid.service_code
+          and sp.professional_code = $2
+        where grid.service_code = $1
+          and (grid.professional_code = $2 or grid.professional_code is null)
+          and grid.remaining_capacity > 0
+          and ((grid.slot_date + grid.slot_time) at time zone 'America/Bahia') > now()
+          and grid.slot_date <= (now() at time zone 'America/Bahia')::date + 21
+          and ($3::date is null or grid.slot_date = $3)
+        order by grid.slot_date, grid.slot_time`,
+      values: [serviceCode, professionalCode, date],
+    });
+    return rows;
+  }
+
   async function createAppointmentRequest({
     contactWaId, sourceMessageId, serviceCode, professionalCode, startsAt, endsAt, occurredAt = null,
   }) {
@@ -410,10 +445,20 @@ function createDatabase({ connectionString, pool } = {}) {
     const client = await resolvedPool.connect();
     try {
       await client.query('begin');
+      // Repeated selections from different WhatsApp messages must not create
+      // two pending requests that the clinic cannot confirm unambiguously.
+      await client.query({
+        text: 'select pg_advisory_xact_lock(hashtext($1), hashtext($2))',
+        values: [contactWaId, 'appointment_request'],
+      });
       const existingRequest = await client.query({
         text: `select id, contact_wa_id, status, created_at
-          from appointment_requests where source_message_id = $1`,
-        values: [sourceMessageId],
+          from appointment_requests where source_message_id = $1
+            or (contact_wa_id = $2 and service_code = $3 and preferred_professional_code = $4
+              and preferred_starts_at = $5 and preferred_ends_at = $6 and status = 'requested')
+          order by (source_message_id = $1) desc, created_at
+          limit 1`,
+        values: [sourceMessageId, contactWaId, serviceCode, professionalCode, startsAt, endsAt],
       });
       if (existingRequest.rows.length > 0) {
         await client.query('commit');
@@ -421,15 +466,18 @@ function createDatabase({ connectionString, pool } = {}) {
       }
 
       const available = await client.query({
-        text: `select 1 from reporting.appointment_slot_capacity_metrics
-          where service_code = $1
-            and (professional_code = $2 or professional_code is null)
+        text: `select 1 from reporting.appointment_slot_capacity_metrics grid
+          join appointment_service_professionals sp on sp.service_code = grid.service_code
+            and sp.professional_code = $2
+          where grid.service_code = $1
+            and (grid.professional_code = $2 or grid.professional_code is null)
             and slot_date = ($3::timestamptz at time zone 'America/Bahia')::date
             and slot_time = ($3::timestamptz at time zone 'America/Bahia')::time
+            and $4::timestamptz = $3::timestamptz + make_interval(mins => grid.duration_minutes)
             and $3::timestamptz > now()
             and remaining_capacity > 0
           limit 1`,
-        values: [serviceCode, professionalCode, startsAt],
+        values: [serviceCode, professionalCode, startsAt, endsAt],
       });
       if (available.rows.length === 0) {
         await client.query('commit');
@@ -669,6 +717,8 @@ function createDatabase({ connectionString, pool } = {}) {
     findPersistedMessageIdByInfobipId,
     getFaqBotContext,
     insertMessage,
+    listAppointmentProfessionals,
+    listAvailableAppointmentSlots,
     persistOutboundMessage,
     persistWebhookMessage,
     ping,

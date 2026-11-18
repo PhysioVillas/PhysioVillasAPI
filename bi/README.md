@@ -27,10 +27,9 @@ em [`../docs/BI_DATA_CONTRACT.md`](../docs/BI_DATA_CONTRACT.md).
 O arquivo `ClinicaFisio_PowerBI_v5.zip` contém sete páginas de referência
 visual, baseadas em dados fictícios e uma planilha local. O relatório não usa
 as tabelas fictícias de agenda, faltas, ocupação, financeiro ou campanhas. A
-página de agendamentos é uma preparação local: a migration 009 ainda não foi
-aplicada e não contém dimensões de serviço/profissional. A grade semanal e os
-limites agora estão documentados em `src/config/appointmentSchedule.js`, mas
-ainda não são validados pelo banco nem pelo WhatsApp. O modelo atual só registra
+página de agendamentos lê as views da migration 009, aplicada no Neon. Ela
+exibe horários com vaga por serviço e consultas por profissional. O menu do
+WhatsApp consulta o mesmo catálogo e a mesma capacidade. O modelo atual registra
 comparecimento confirmado; não há estado de falta (`no-show`). O webhook de
 produção também precisa de autenticação compatível antes de aceitar comandos
 de agenda. O evento `menu_agendar` sozinho continua sendo uma intenção, não uma

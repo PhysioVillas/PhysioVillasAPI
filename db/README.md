@@ -76,10 +76,10 @@ desativação do bypass continuam bloqueios independentes.
 
 ## Agenda pelo WhatsApp
 
-O fluxo local aceita pedidos estruturados com serviço, profissional, data e
-horário. A API verifica dias, grade, duração e capacidade no banco antes de
-registrar o pedido; o registro é uma solicitação pendente, não uma confirmação
-automática. A equipe responde pelo WhatsApp Business compartilhado. Comandos
+O paciente toca em **Agendar consulta** e escolhe serviço, profissional, dia e
+horário em listas do WhatsApp. O catálogo, a grade e as vagas dos próximos
+21 dias vêm do Neon. A API valida novamente a vaga na seleção final e grava o
+pedido como pendente. A equipe responde pelo WhatsApp Business compartilhado. Comandos
 de confirmação, cancelamento, remarcação e comparecimento precisam ser ecos de
 saída `business_app` do remetente compartilhado configurado e passar pela
 autenticação válida do webhook, com `allowUnauthenticatedInbound` desligado.
@@ -108,10 +108,9 @@ cujo horário final já passou. RPG, Pilates e URO bloqueiam sobreposição do
 mesmo profissional; profissionais diferentes podem atender ao mesmo tempo.
 Fisioterapia permite até seis pacientes simultâneos por faixa de 30 minutos,
 inclusive com o mesmo fisioterapeuta. A migration 009 implementa essa regra no
-banco e as views agregadas para o BI. O catálogo correspondente também existe
-em `src/config/appointmentSchedule.js`. Tudo isso está pronto no código local,
-e depende da publicação da API e da autenticação do webhook para receber
-eventos em produção.
+banco e as views agregadas para o BI. O menu usa essas mesmas informações.
+O fluxo depende da publicação da API e da autenticação do webhook para receber
+eventos no número da clínica.
 Histórico de eventos é append-only e as views de reporting expõem somente
 contagens agregadas. Comparecimento só é contado quando registrado pela equipe.
 

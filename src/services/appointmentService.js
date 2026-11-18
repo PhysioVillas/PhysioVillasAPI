@@ -1,6 +1,5 @@
-import { listAppointmentSlots } from '../config/appointmentSchedule.js';
+import { handleAppointmentMenu, parsePatientAppointmentRequest, requestAvailableSlot } from './appointmentMenu.js';
 
-const APPOINTMENT_REQUEST_REPLY_ID = 'menu_agendar';
 const DATE_TIME = '(\\d{4}-\\d{2}-\\d{2}), das (\\d{2}:\\d{2}) às (\\d{2}:\\d{2})';
 
 function isValidUtcOffset(offset) {
@@ -80,25 +79,6 @@ function parseClinicConfirmation(body, confirmationUtcOffset) {
     : null;
 }
 
-function parsePatientAppointmentRequest(body, confirmationUtcOffset) {
-  if (typeof body !== 'string') return null;
-  const normalized = body.trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
-  const match = /^AGENDAR\s*\|\s*(FISIOTERAPIA|RPG|PILATES|URO)\s*\|\s*(MOISES|ANTONIO|LUARCA|CAMILA)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*(\d{2}:\d{2})$/.exec(normalized);
-  if (!match || !isValidUtcOffset(confirmationUtcOffset)) return null;
-
-  const serviceCode = match[1].toLowerCase();
-  const professionalCode = match[2].toLowerCase();
-  const date = match[3];
-  const startsAtLocal = match[4];
-  const slot = listAppointmentSlots({ date, serviceCode, professionalCode })
-    .find((candidate) => candidate.startsAtLocal === startsAtLocal);
-  if (slot === undefined) return null;
-
-  const instant = parseSlot(date, slot.startsAtLocal, slot.endsAtLocal, confirmationUtcOffset);
-  if (instant === null || new Date(instant.startsAt).getTime() <= Date.now()) return null;
-  return { serviceCode, professionalCode, ...instant };
-}
-
 function createAppointmentService({ database, commandBoundary } = {}) {
   if (database === undefined || commandBoundary === undefined) {
     throw new TypeError('database and commandBoundary are required.');
@@ -110,9 +90,7 @@ function createAppointmentService({ database, commandBoundary } = {}) {
       return { action: 'ignored', reason: 'duplicate_message' };
     }
 
-    if (message.direction === 'in' && message.messageType === 'text') {
-      const request = parsePatientAppointmentRequest(message.body, trustedPrincipal.confirmationUtcOffset);
-      if (request === null) return { action: 'ignored', reason: 'not_structured_appointment_request' };
+    async function registerRequest(request) {
       const result = await database.createAppointmentRequest({
         contactWaId: message.waId,
         sourceMessageId: persistedMessage.id,
@@ -122,13 +100,20 @@ function createAppointmentService({ database, commandBoundary } = {}) {
         endsAt: request.endsAt,
         occurredAt: message.createdAt,
       });
-      return result?.unavailable === true
+      return result === null || result?.unavailable === true
         ? { action: 'slot_unavailable', request }
         : { action: 'request_created', request: result };
     }
 
-    if (message.direction === 'in' && message.messageType === 'interactive_list_reply' && message.replyId === APPOINTMENT_REQUEST_REPLY_ID) {
-      return { action: 'request_instructions' };
+    if (message.direction === 'in' && message.messageType === 'text') {
+      const selection = parsePatientAppointmentRequest(message.body);
+      if (selection === null) return { action: 'ignored', reason: 'not_structured_appointment_request' };
+      return requestAvailableSlot({ database, selection, registerRequest });
+    }
+
+    if (message.direction === 'in' && message.messageType === 'interactive_list_reply') {
+      return await handleAppointmentMenu({ database, replyId: message.replyId, registerRequest })
+        ?? { action: 'ignored', reason: 'not_appointment_menu' };
     }
 
     if (
@@ -183,9 +168,7 @@ function createAppointmentService({ database, commandBoundary } = {}) {
 }
 
 export {
-  APPOINTMENT_REQUEST_REPLY_ID,
   createAppointmentService,
   parseClinicAppointmentCommand,
   parseClinicConfirmation,
-  parsePatientAppointmentRequest,
 };

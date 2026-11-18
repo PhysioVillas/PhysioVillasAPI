@@ -11,10 +11,10 @@ essas partes estejam aplicadas ou funcionando em produção.
 
 - **Agenda/API local:** `db/migrations/009_appointments.sql` define pedidos,
   consultas, histórico de eventos e views agregadas. A grade de segunda a
-  sexta e as capacidades definidas pela clínica estão em
-  `src/config/appointmentSchedule.js`. `src/services/appointmentService.js`
-  interpreta o pedido estruturado e verifica vagas; a equipe precisa confirmar
-  no WhatsApp Business. A confirmação volta a validar conflitos e capacidade
+  sexta e as capacidades definidas pela clínica vêm do Neon. A opção
+  **Agendar consulta** abre listas do WhatsApp para escolher serviço,
+  profissional, dia e horário. A equipe confirma no WhatsApp Business.
+  A confirmação volta a validar conflitos e capacidade
   no banco. A regra de fisioterapia é até seis pacientes simultâneos por faixa
   de 30 minutos, inclusive com o mesmo fisioterapeuta; RPG/Pilates com Luarca
   compartilham a restrição de não sobreposição.
@@ -45,8 +45,8 @@ essas partes estejam aplicadas ou funcionando em produção.
 
 **Liberação da API:** o merge em `main` pode acionar a Vercel. Antes disso,
 valide a assinatura no perfil de notificação da Infobip e a configuração na
-Vercel para preservar o recebimento de mensagens. A solicitação de agendamento
-usa texto estruturado.
+Vercel para preservar o recebimento de mensagens. O acesso ao menu pode ser
+validado no número da clínica após a publicação autenticada.
 
 ## Atualização — 2026-10-21: bot de FAQ no backend
 

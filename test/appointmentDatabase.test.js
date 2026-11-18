@@ -76,7 +76,7 @@ test('a request stores selected service/provider/slot after checking database av
 
   assert.equal(result.id, 'request-1');
   const availability = calls.find((call) => typeof call === 'object' && call.text.includes('reporting.appointment_slot_capacity_metrics'));
-  assert.deepEqual(availability.values, ['fisioterapia', 'moises', '2026-12-01T10:30:00.000Z']);
+  assert.deepEqual(availability.values, ['fisioterapia', 'moises', '2026-12-01T10:30:00.000Z', '2026-12-01T11:00:00.000Z']);
   const requestInsert = calls.find((call) => typeof call === 'object' && call.text.includes('insert into appointment_requests'));
   assert.match(requestInsert.text, /service_code, preferred_professional_code/i);
   assert.deepEqual(requestInsert.values.slice(2, 6), ['fisioterapia', 'moises', '2026-12-01T10:30:00.000Z', '2026-12-01T11:00:00.000Z']);

@@ -290,6 +290,9 @@ test('authenticated retries resume an appointment request by stored message id a
       lookupIds.push(id);
       return id === providerMessageId ? internalMessageId : null;
     },
+    listAvailableAppointmentSlots: async () => [
+      { time: '07:30', startsAt: '2026-12-01T10:30:00.000Z', endsAt: '2026-12-01T11:00:00.000Z' },
+    ],
     createAppointmentRequest: async ({ sourceMessageId }) => {
       appointmentAttempts += 1;
       persistedSourceIds.push(sourceMessageId);

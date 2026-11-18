@@ -22,18 +22,18 @@ A Infobip é o provedor de transporte usado pela API; **as regras do fluxo não 
 ## Fluxo de atendimento implementado
 
 1. A mensagem recebida chega ao webhook e é normalizada antes de ser associada ao contato, conversa e mensagem.
-2. O backend responde com o menu interativo. As opções atuais cobrem agendamento/remarcação, novo paciente, equipe humana e dúvidas institucionais.
+2. O backend responde com o menu interativo. O paciente pode agendar uma consulta, pedir atendimento para remarcação ou cancelamento, iniciar um primeiro contato ou consultar o FAQ.
 3. As perguntas frequentes disponíveis são horários, convênios, localização e serviços. A equipe pode ser acionada a partir do menu ou das respostas.
 4. Após handoff ou resposta da equipe pelo WhatsApp Business App, o bot silencia por 12 horas; `MENU` reabre o menu.
 5. Mensagens de saída podem ser enviadas pelas rotas internas de texto e template. Quando o envio está configurado, o recibo do provedor é persistido no Neon.
 
-O código local agora inclui uma agenda transacional: pedidos do paciente identificam serviço, profissional e horário; a API consulta as vagas do banco; a equipe confirma, cancela, remarca e registra comparecimento pelo WhatsApp Business compartilhado. Mensagens comuns não mudam uma consulta. Isso ainda depende da migration 009 estar aplicada no banco de produção e da autenticação do webhook estar configurada e validada no Infobip e na Vercel.
+Em **Agendar consulta**, o paciente escolhe serviço, profissional, dia e horário em listas interativas. A API consulta a disponibilidade no Neon e registra o pedido pendente. A equipe confirma, cancela, remarca e registra comparecimento pelo WhatsApp Business compartilhado. Mensagens comuns não mudam uma consulta. A migration 009 já está aplicada no Neon. O deploy do fluxo requer autenticação do webhook configurada e validada na Infobip e na Vercel.
 
 ## Componentes
 
 - **API:** Node.js + Express em módulos ESM, executável localmente e compatível com Vercel Functions.
 - **WhatsApp:** webhooks e envio de mensagens pelo provedor configurado no backend. As regras de atendimento ficam no ChatManager.
-- **Banco:** Neon/PostgreSQL. As migrations versionam contatos, conversas, mensagens, eventos do fluxo, catálogo e grade de agenda, solicitações, consultas e eventos de ciclo de vida. A migration 009 foi validada em PostgreSQL descartável; sua aplicação no Neon de produção é uma etapa separada.
+- **Banco:** Neon/PostgreSQL. As migrations versionam contatos, conversas, mensagens, eventos do fluxo, catálogo e grade de agenda, solicitações, consultas e eventos de ciclo de vida. A migration 009 foi validada em PostgreSQL descartável e aplicada no Neon.
 - **BI:** o projeto Power BI contém páginas/modelo para mensagens, fluxo, resposta humana e agenda (pedidos, consultas por serviço/profissional, comparecimento e vagas). Ele lê somente views agregadas em `reporting`. O relatório só pode ser tratado como operacional depois da migration 009, das credenciais somente leitura e de uma atualização bem-sucedida no Power BI Service.
 - **Documentação da API:** `GET /docs` e `GET /docs.json`.
 

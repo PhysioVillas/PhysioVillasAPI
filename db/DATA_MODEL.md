@@ -91,10 +91,10 @@ A clínica definiu que duas consultas não podem se sobrepor quando são do mesm
 profissional, mas podem ocorrer no mesmo horário se forem com profissionais
 diferentes. A exceção é fisioterapia: até seis pacientes podem ocupar o mesmo
 bloco de 30 minutos, inclusive com o mesmo fisioterapeuta. A clínica também
-informou a grade de segunda a sexta, os profissionais e os serviços. O catálogo
-local `src/config/appointmentSchedule.js` descreve esses horários, durações e
-capacidades. A API local usa esse contrato no pedido estruturado e consulta
-`reporting.appointment_slot_capacity_metrics` antes de registrar a solicitação.
+informou a grade de segunda a sexta, os profissionais e os serviços. A
+migration 009 cadastrou esses dados no Neon. A API usa o catálogo e
+`reporting.appointment_slot_capacity_metrics` para listar as opções do WhatsApp
+e validar a vaga antes de registrar a solicitação.
 Um pedido não reserva definitivamente o horário: a equipe precisa confirmar.
 Na confirmação, um trigger valida novamente grade, duração e capacidade sob
 lock transacional, para impedir conflito em confirmações concorrentes.

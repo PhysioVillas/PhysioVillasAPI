@@ -29,8 +29,8 @@ const mainMenu = {
       rows: [
         {
           id: 'menu_agendar',
-          title: 'Agendar ou remarcar',
-          description: 'A equipe confirma a disponibilidade com você',
+          title: 'Agendar consulta',
+          description: 'Escolha o serviço, profissional, dia e horário',
         },
         {
           id: 'menu_paciente_novo',
@@ -40,7 +40,7 @@ const mainMenu = {
         {
           id: 'menu_atendente',
           title: 'Falar com a equipe',
-          description: 'Atendimento com uma pessoa da nossa equipe',
+          description: 'Remarcações, cancelamentos e atendimento humano',
         },
       ],
     },
@@ -75,21 +75,17 @@ const mainMenu = {
 // Respostas das linhas de "Dúvidas frequentes": enviadas com os botões
 // "Voltar ao menu" e "Falar com a equipe".
 const faqAnswers = {
-  faq_horarios: '🕒 Agenda: segunda a sexta.\n\nPilates: 7h–12h e 14h–17h. RPG, URO e Fisioterapia: 7h30–12h e 14h–18h30. Os horários precisam ser conferidos e confirmados pela equipe. Toque em "Falar com a equipe" para solicitar um horário.',
+  faq_horarios: '🕒 Para consultar os próximos horários por serviço e profissional, volte ao menu e toque em "Agendar consulta". A equipe confirma seu pedido por aqui.',
   faq_convenios: '💳 Convênios e pagamento\n\nNossa equipe confirma os convênios aceitos e as formas de pagamento disponíveis. Toque em "Falar com a equipe".',
   faq_localizacao: '📍 Localização\n\nNossa equipe envia o endereço atualizado e orientações para chegar. Toque em "Falar com a equipe".',
-  faq_servicos: '🩺 Serviços e profissionais\n\nFisioterapia: Moisés e Antônio. RPG e Pilates: Luarca. URO: Camila. A equipe ajuda a direcionar seu atendimento. Toque em "Falar com a equipe".',
+  faq_servicos: '🩺 Para ver os serviços e profissionais da agenda, volte ao menu e toque em "Agendar consulta". Nossa equipe pode ajudar se você tiver dúvidas sobre o atendimento.',
 };
 
 // Opções que encaminham para a equipe humana. Depois delas o bot fica em
 // silêncio para o contato por 12 h (HANDOFF_SILENCE_HOURS em
 // src/services/faqBot.js) até ele pedir o menu.
 const handoffReplies = {
-  menu_agendar: 'Certo! Para solicitar, envie exatamente no formato abaixo. Use a data AAAA-MM-DD e um horário da agenda.\n\n'
-    + 'AGENDAR | SERVIÇO | PROFISSIONAL | AAAA-MM-DD | HH:MM\n\n'
-    + 'Serviços/profissionais: FISIOTERAPIA (MOISES ou ANTONIO), RPG (LUARCA), PILATES (LUARCA), URO (CAMILA).\n'
-    + 'A API confere se o horário existe e está disponível. O pedido só vira consulta após a equipe confirmar por aqui.\n\n'
-    + 'Para voltar ao menu, envie MENU.',
+  menu_agendar: 'A agenda automática está indisponível neste momento. Nossa equipe pode ajudar a escolher um horário por aqui.',
   menu_paciente_novo: 'Seja bem-vindo(a)! Envie seu nome e o motivo do contato '
     + '(por exemplo: "quero marcar uma avaliação"). Nossa equipe continua o atendimento por aqui.\n\n'
     + 'Para voltar ao menu, envie MENU.',

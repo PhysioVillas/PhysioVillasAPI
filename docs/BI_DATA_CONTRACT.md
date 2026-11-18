@@ -43,10 +43,10 @@ continua em dias diferentes pode aparecer em cada um desses dias. Não some
 `conversation_count` entre tipos de evento para obter um total de conversas,
 pois a mesma conversa pode participar de várias etapas.
 
-`menu_agendar` registra a seleção da opção “Agendar/Remarcar”; esse evento do
-funil não é, por si só, um pedido válido de consulta. O pedido estruturado
-identifica serviço, profissional e horário, é comparado com a view de vagas e
-fica pendente até a confirmação da equipe pelo WhatsApp Business. A migration
+`menu_agendar` registra a abertura de “Agendar consulta”. O pedido é gravado
+após a seleção de serviço, profissional, dia e horário e a validação final
+de disponibilidade. Ele fica pendente até a equipe confirmar pelo WhatsApp
+Business. A migration
 009 cria as views de solicitações, consultas, eventos e horários. A migration
 foi aplicada no Neon após a reconciliação do histórico. O Power BI Desktop
 carregou as views. As consultas passarão a aparecer após o fluxo da API ser
@@ -62,8 +62,8 @@ profissionais diferentes podem atender simultaneamente. Como Luarca realiza
 RPG e Pilates, os conflitos entre essas modalidades também precisam ser
 verificados em conjunto.
 
-O catálogo `src/config/appointmentSchedule.js` e a migration 009 descrevem a
-mesma grade. A consulta ao BI mostra a capacidade dos horários; na confirmação,
+O menu consulta no Neon o catálogo e a grade criados pela migration 009.
+O BI usa a mesma view de capacidade. Na confirmação,
 um trigger no banco valida a grade e conflitos dentro da transação. Pedidos
 pendentes não reservam o horário, portanto a equipe deve confirmar a vaga antes
 de responder que está marcada.

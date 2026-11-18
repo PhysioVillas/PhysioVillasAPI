@@ -1,4 +1,5 @@
 import * as defaultContent from '../config/faqContent.js';
+import { BOOKING_MENU_ID } from './appointmentMenu.js';
 
 // How long the bot stays silent on text after a handoff or a team reply
 // from the WhatsApp Business App.
@@ -93,11 +94,28 @@ function createFaqBot({
   }
 
   async function handleInbound({ waId, messageType, replyId = null, body = null, appointmentResult = null }) {
+    if (appointmentResult?.action === 'appointment_menu') {
+      const list = appointmentResult.list;
+      return send('sendWhatsAppInteractiveList', list, {
+        waId,
+        body: list.body,
+        messageType: 'faq_menu',
+        conversationIntent: 'scheduling',
+      });
+    }
     if (appointmentResult?.action === 'request_created') {
       return sendHandoff(waId, 'Pedido registrado para o horário escolhido. A equipe ainda precisa confirmar a disponibilidade e responderá por este WhatsApp.');
     }
     if (appointmentResult?.action === 'slot_unavailable') {
-      return sendHandoff(waId, 'Esse horário não está mais disponível na agenda. Envie MENU para escolher outro horário ou falar com a equipe.');
+      const text = 'Esse horário não está mais disponível. Escolha outro na agenda ou fale com a equipe.';
+      return send('sendWhatsAppInteractiveList', {
+        body: text,
+        buttonTitle: 'Ver opções',
+        sections: [{ rows: [
+          { id: BOOKING_MENU_ID, title: 'Escolher outro horário' },
+          { id: 'menu_atendente', title: 'Falar com a equipe' },
+        ] }],
+      }, { waId, body: text, messageType: 'faq_menu', conversationIntent: 'scheduling' });
     }
 
     switch (messageType) {
