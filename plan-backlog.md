@@ -645,7 +645,12 @@ sobrescrita no fim:
     - páginas do Power BI que mostram o resultado.
 - **Aceite:** o roteiro pode ser seguido por quem não conhece o código.
 
-#### T21 — QA ponta a ponta e simulador de conversas
+#### T21 — QA ponta a ponta e simulador de conversas *(CORTADO em 2026-11-18)*
+
+> Cortado: os testes de rota do T17 (`test/botWebhookIntegration.test.js`)
+> e o teste de fumaça das escritas no Neon já cobrem o que ele verificaria;
+> o ensaio do G3 no número de teste cobre o caminho real pela Infobip.
+
 - **Modelo:** Sonnet
 - **Depende de:** T17, T18 (e G2 para a parte contra o Neon)
 - **Arquivos:** cria `scripts/simulate-conversation.js` e `test/e2eConversations.test.js`.
