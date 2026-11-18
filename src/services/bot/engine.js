@@ -70,6 +70,7 @@
 
 import { isWithinSupportHours, nextSupportOpening } from './businessHours.js';
 import { detectIntent } from './intents.js';
+import { templateButtonReplyId } from './reminders.js';
 import { normalizeRepliesWithPages } from './replies.js';
 
 const INPUT_KINDS = new Set(['text', 'list_reply', 'button_reply']);
@@ -115,17 +116,26 @@ export function inboundFromNormalizedMessage(message) {
     text: 'text',
     interactive_list_reply: 'list_reply',
     interactive_button_reply: 'button_reply',
+    // Quick reply de template (lembrete, T19). Formato do inbound ainda não
+    // capturado: o normalizador traz `payload` (ou `id`) em replyId e o
+    // título em body; `templateButtonReplyId` traduz "Confirmo"/"Remarcar"/
+    // "Cancelar" para `my_appointments:reminder|…`, roteado sem estado.
+    button: 'button_reply',
   };
   const kind = kinds[message?.messageType];
   if (!kind || typeof message.waId !== 'string') {
     return null;
+  }
+  let replyId = kind === 'text' ? null : message.replyId ?? null;
+  if (message.messageType === 'button') {
+    replyId = templateButtonReplyId(message.replyId, message.body);
   }
   return {
     waId: message.waId,
     receivedAt: message.createdAt ?? null,
     kind,
     text: message.body ?? null,
-    replyId: kind === 'text' ? null : message.replyId ?? null,
+    replyId,
   };
 }
 

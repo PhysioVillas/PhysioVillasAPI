@@ -27,6 +27,7 @@ import { menuFlow } from './flows/menu.js';
 import { myAppointmentsFlow } from './flows/myAppointments.js';
 import { triageFlow } from './flows/triage.js';
 import { createHandoffRepository } from './handoffRepository.js';
+import { createReminderRepository } from './reminders.js';
 import { createBotSender, replyBody } from './sender.js';
 import { createStateStore } from './stateStore.js';
 
@@ -146,6 +147,8 @@ export function createBot({
     catalog: createCatalogRepository({ pool }),
     appointments: createAppointmentRepository({ pool, clock: now }),
     patients: createPatientRepository({ pool, clock: now, logger }),
+    // Botão "Confirmo" do lembrete (T19): grava lembrete_confirmado.
+    reminders: createReminderRepository({ pool, clock: now }),
   };
   const engine = createBotEngine({
     flows: flows ?? {
