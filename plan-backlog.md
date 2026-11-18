@@ -145,6 +145,27 @@ dependentes. Todas as funções são `async` e recebem e devolvem `camelCase`.
   salvo.
 - Fluxos registrados: `menu`, `faq`, `booking`, `my_appointments`, `triage`.
 
+#### 3.3.1 Refinamentos do T12 (2026-11-18) — valem para T13–T17
+
+O contrato completo está no cabeçalho de `src/services/bot/engine.js`. Resumo:
+
+- `inbound = {waId, receivedAt, kind, text, replyId}`; `inboundFromNormalizedMessage(message)` monta a partir do normalizador.
+- `ctx = {waId, now, config, state, patient, inBusinessHours, repos}`. `state` só é o do fluxo chamado; `patient` vem de `state.context.patient` e o fluxo o grava ali depois de validar o CPF. O engine carrega o paciente entre fluxos; ele se perde quando o estado é limpo ou expira.
+- `input = {kind, text, replyId, intent, reply}`; `reply = {flow, step, value}` quando o id segue `<flow>:<step>|<value>`. Só texto recebe `intent`.
+- `next.cpfAttempts` (opcional) é gravado em `cpf_attempts`.
+- **Troca de fluxo:** se `next.flow` difere do fluxo que respondeu, o engine chama `flows[next.flow].start(ctx)` sem `input`, com `ctx.state` montado do `next`, e concatena as respostas (máx. 3 trocas). `booking.start` deve olhar `ctx.state.step` (a triagem devolve para `booking:choose_day`).
+- **`handoff`:** o engine abre, limpa o estado, ignora `next` e acrescenta o texto padrão da equipe (com próxima abertura fora do horário). O fluxo só explica o motivo.
+- **Listas > 10 linhas:** o fluxo emite a lista inteira; o engine pagina (`context._pages`, reservado) e responde "Ver mais" sozinho.
+- Saída de `handle`: `{replies, events, handoff, flow, silenced}`; `flow` serve ao T17 para `current_intent`.
+
+#### 3.3.2 Achados da W3 que os fluxos precisam respeitar
+
+- **Formas de pagamento sem preço** (T10): Pilates por convênio ou avulso e Massagem em pacote ou mensalidade gravam `valor_sessao` nulo. O fluxo de agendamento só oferece as combinações com preço em `d_precos`/`d_convenios` (Pilates: mensalidade; Massagem: avulso).
+- **Dupla reserva** (T10): o repositório não impede o mesmo paciente de reservar o mesmo horário duas vezes; o fluxo confere `listUpcoming` antes de confirmar.
+- **Remarcar para o mesmo horário** (T10) conta a consulta original como ocupada; o fluxo não oferece o horário atual.
+- **`jornada_contatos.origem`** (T11): o CHECK só aceita `lead_planilha` e `paciente_sem_lead`; não existe `'chatbot'`.
+- **SQL de escrita do T10/T11 ainda não rodou no Postgres**: teste de fumaça num branch temporário do Neon antes do G2.
+
 ### 3.4 Etapas de lead (`f_leads.etapa_final`)
 
 Atualizada a cada passo com o valor "Abandonou na …" da etapa atual, e
