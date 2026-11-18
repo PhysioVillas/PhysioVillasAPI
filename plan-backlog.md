@@ -316,8 +316,10 @@ sobrescrita no fim:
 
 ### G1 — ponto de controle humano
 
-- [ ] Mesclar W1 e W2 e rodar `npm run migrate` (aplica 010, 011 e 012).
-- [ ] Rodar `npm run extend-schedule` e conferir a saída (linhas inseridas > 0).
+- [x] Mesclar W1 e W2 e rodar `npm run migrate` (aplica 010, 011 e 012).
+      Feito em 2026-11-18, depois de testado num branch temporário do Neon.
+- [x] Rodar `npm run extend-schedule` e conferir a saída (linhas inseridas > 0).
+      2258 linhas; calendário até 2027-01-17. Pacientes demo: ids 2680–2684.
 - [ ] Conceder à conta de banco do bot `insert`/`update`/`usage` nas tabelas
       de `clinica_simulada` usadas por T10/T11 (lista no README do T01). Na
       conta do bot atual (dona do banco) isso não é necessário.
