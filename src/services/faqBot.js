@@ -92,7 +92,14 @@ function createFaqBot({
     return sendMenu(waId);
   }
 
-  async function handleInbound({ waId, messageType, replyId = null, body = null }) {
+  async function handleInbound({ waId, messageType, replyId = null, body = null, appointmentResult = null }) {
+    if (appointmentResult?.action === 'request_created') {
+      return sendHandoff(waId, 'Pedido registrado para o horário escolhido. A equipe ainda precisa confirmar a disponibilidade e responderá por este WhatsApp.');
+    }
+    if (appointmentResult?.action === 'slot_unavailable') {
+      return sendHandoff(waId, 'Esse horário não está mais disponível na agenda. Envie MENU para escolher outro horário ou falar com a equipe.');
+    }
+
     switch (messageType) {
       case 'text':
         return handleText(waId, body);

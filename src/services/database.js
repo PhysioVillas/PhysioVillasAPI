@@ -112,6 +112,18 @@ function createDatabase({ connectionString, pool } = {}) {
     return insertMessageWith(resolvedPool, message);
   }
 
+  async function findPersistedMessageIdByInfobipId(infobipMessageId) {
+    if (typeof infobipMessageId !== 'string' || infobipMessageId.trim() === '') {
+      throw new TypeError('infobipMessageId is required.');
+    }
+
+    const result = await resolvedPool.query({
+      text: 'select id from messages where infobip_message_id = $1',
+      values: [infobipMessageId],
+    });
+    return result.rows[0]?.id ?? null;
+  }
+
   async function recordFlowEventsWith(executor, message, conversationId) {
     for (const event of flowEventForMessage(message)) {
       await executor.query({
@@ -209,6 +221,13 @@ function createDatabase({ connectionString, pool } = {}) {
           to_regclass('reporting.daily_message_metrics') is not null as reporting_view_exists,
           to_regclass('reporting.daily_whatsapp_flow_metrics') is not null as flow_reporting_view_exists,
           to_regclass('reporting.daily_human_response_metrics') is not null as human_response_reporting_view_exists,
+          to_regclass('public.appointment_requests') is not null as appointment_requests_exists,
+          to_regclass('public.appointments') is not null as appointments_exists,
+          to_regclass('public.appointment_events') is not null as appointment_events_exists,
+          to_regclass('reporting.daily_appointment_event_metrics') is not null as appointment_event_reporting_view_exists,
+          to_regclass('reporting.appointment_request_status_metrics') is not null as appointment_request_reporting_view_exists,
+          to_regclass('reporting.scheduled_appointment_metrics') is not null as scheduled_appointment_reporting_view_exists,
+          to_regclass('reporting.appointment_slot_capacity_metrics') is not null as appointment_slot_capacity_reporting_view_exists,
           exists (
             select 1
             from information_schema.columns
@@ -228,6 +247,13 @@ function createDatabase({ connectionString, pool } = {}) {
       schema?.reporting_view_exists !== true ||
       schema?.flow_reporting_view_exists !== true ||
       schema?.human_response_reporting_view_exists !== true ||
+      schema?.appointment_requests_exists !== true ||
+      schema?.appointments_exists !== true ||
+      schema?.appointment_events_exists !== true ||
+      schema?.appointment_event_reporting_view_exists !== true ||
+      schema?.appointment_request_reporting_view_exists !== true ||
+      schema?.scheduled_appointment_reporting_view_exists !== true ||
+      schema?.appointment_slot_capacity_reporting_view_exists !== true ||
       schema?.delivery_status_column_exists !== true
     ) {
       throw new Error('ChatManager database schema is incomplete.');
@@ -374,13 +400,281 @@ function createDatabase({ connectionString, pool } = {}) {
     };
   }
 
+  async function createAppointmentRequest({
+    contactWaId, sourceMessageId, serviceCode, professionalCode, startsAt, endsAt, occurredAt = null,
+  }) {
+    if (!contactWaId || !sourceMessageId || !serviceCode || !professionalCode || !startsAt || !endsAt) {
+      throw new TypeError('contactWaId, sourceMessageId, serviceCode, professionalCode, startsAt, and endsAt are required.');
+    }
+
+    const client = await resolvedPool.connect();
+    try {
+      await client.query('begin');
+      const existingRequest = await client.query({
+        text: `select id, contact_wa_id, status, created_at
+          from appointment_requests where source_message_id = $1`,
+        values: [sourceMessageId],
+      });
+      if (existingRequest.rows.length > 0) {
+        await client.query('commit');
+        return existingRequest.rows[0];
+      }
+
+      const available = await client.query({
+        text: `select 1 from reporting.appointment_slot_capacity_metrics
+          where service_code = $1
+            and (professional_code = $2 or professional_code is null)
+            and slot_date = ($3::timestamptz at time zone 'America/Bahia')::date
+            and slot_time = ($3::timestamptz at time zone 'America/Bahia')::time
+            and $3::timestamptz > now()
+            and remaining_capacity > 0
+          limit 1`,
+        values: [serviceCode, professionalCode, startsAt],
+      });
+      if (available.rows.length === 0) {
+        await client.query('commit');
+        return { unavailable: true };
+      }
+
+      const request = await client.query({
+        text: `insert into appointment_requests (
+            contact_wa_id, source_message_id, service_code, preferred_professional_code,
+            preferred_starts_at, preferred_ends_at, created_at
+          ) values ($1, $2, $3, $4, $5, $6, coalesce($7, now()))
+          on conflict (source_message_id) do nothing
+          returning id, contact_wa_id, status, created_at`,
+        values: [contactWaId, sourceMessageId, serviceCode, professionalCode, startsAt, endsAt, occurredAt],
+      });
+      const row = request.rows[0] ?? null;
+      if (row !== null) {
+        await client.query({
+          text: `insert into appointment_events (
+              appointment_request_id, source_message_id, event_type, actor_kind,
+              resulting_starts_at, resulting_ends_at, occurred_at
+            ) values ($1, $2, 'requested', 'patient_structured_whatsapp', $3, $4, coalesce($5, now()))`,
+          values: [row.id, sourceMessageId, startsAt, endsAt, occurredAt],
+        });
+      }
+      await client.query('commit');
+      return row;
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async function confirmSinglePendingAppointmentRequest({ contactWaId, sourceMessageId, startsAt, endsAt, occurredAt = null }) {
+    if (!contactWaId || !sourceMessageId || !startsAt || !endsAt) {
+      throw new TypeError('contactWaId, sourceMessageId, startsAt, and endsAt are required.');
+    }
+    const client = await resolvedPool.connect();
+    try {
+      await client.query('begin');
+      if (await hasAppointmentSourceEvent(client, sourceMessageId)) {
+        await client.query('commit');
+        return null;
+      }
+      const pending = await client.query({
+        text: `select id, service_code, preferred_professional_code
+          from appointment_requests where contact_wa_id = $1 and status = 'requested'
+          order by created_at asc for update`,
+        values: [contactWaId],
+      });
+      if (pending.rows.length !== 1) {
+        await client.query('commit');
+        return null;
+      }
+      const requestId = pending.rows[0].id;
+      const appointment = await client.query({
+        text: `insert into appointments (
+            appointment_request_id, contact_wa_id, service_code, professional_code,
+            starts_at, ends_at, status
+          ) values ($1, $2, $3, $4, $5, $6, 'confirmed')
+          returning id, appointment_request_id, service_code, professional_code, starts_at, ends_at, status`,
+        values: [requestId, contactWaId, pending.rows[0].service_code, pending.rows[0].preferred_professional_code, startsAt, endsAt],
+      });
+      const row = appointment.rows[0];
+      await client.query({ text: "update appointment_requests set status = 'confirmed' where id = $1", values: [requestId] });
+      await client.query({
+        text: `insert into appointment_events (
+          appointment_request_id, appointment_id, source_message_id, event_type, actor_kind,
+          resulting_starts_at, resulting_ends_at, occurred_at
+        ) values ($1, $2, $3, 'confirmed', 'clinic_whatsapp_business_account', $4, $5, coalesce($6, now()))`,
+        values: [requestId, row.id, sourceMessageId, startsAt, endsAt, occurredAt],
+      });
+      await client.query('commit');
+      return row;
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async function findConfirmedAppointmentWith(client, { contactWaId, startsAt, endsAt, requireEnded = false }) {
+    const result = await client.query({
+      text: `select a.id, a.appointment_request_id, a.starts_at, a.ends_at, a.status
+        from appointments a
+        where a.contact_wa_id = $1 and a.status = 'confirmed'
+          and a.starts_at = $2 and a.ends_at = $3
+          and a.attendance_status is null
+          and ($4 = false or a.ends_at <= now())
+        for update`,
+      values: [contactWaId, startsAt, endsAt, requireEnded],
+    });
+    return result.rows.length === 1 ? result.rows[0] : null;
+  }
+
+  async function hasAppointmentSourceEvent(client, sourceMessageId) {
+    const result = await client.query({
+      text: 'select 1 from appointment_events where source_message_id = $1',
+      values: [sourceMessageId],
+    });
+    return result.rows.length > 0;
+  }
+
+  async function cancelConfirmedAppointment({ contactWaId, sourceMessageId, startsAt, endsAt, occurredAt = null }) {
+    if (!contactWaId || !sourceMessageId || !startsAt || !endsAt) {
+      throw new TypeError('contactWaId, sourceMessageId, startsAt, and endsAt are required.');
+    }
+    const client = await resolvedPool.connect();
+    try {
+      await client.query('begin');
+      if (await hasAppointmentSourceEvent(client, sourceMessageId)) {
+        await client.query('commit');
+        return null;
+      }
+      const appointment = await findConfirmedAppointmentWith(client, { contactWaId, startsAt, endsAt });
+      if (appointment === null) {
+        await client.query('commit');
+        return null;
+      }
+      await client.query({
+        text: "update appointments set status = 'cancelled', updated_at = coalesce($2, now()) where id = $1",
+        values: [appointment.id, occurredAt],
+      });
+      await client.query({
+        text: "update appointment_requests set status = 'cancelled' where id = $1",
+        values: [appointment.appointment_request_id],
+      });
+      await client.query({
+        text: `insert into appointment_events (
+          appointment_request_id, appointment_id, source_message_id, event_type, actor_kind,
+          previous_starts_at, previous_ends_at, resulting_starts_at, resulting_ends_at, occurred_at
+        ) values ($1, $2, $3, 'cancelled', 'clinic_whatsapp_business_account', $4, $5, null, null, coalesce($6, now()))`,
+        values: [appointment.appointment_request_id, appointment.id, sourceMessageId, startsAt, endsAt, occurredAt],
+      });
+      await client.query('commit');
+      return { ...appointment, status: 'cancelled' };
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async function rescheduleConfirmedAppointment({
+    contactWaId, sourceMessageId, previousStartsAt, previousEndsAt,
+    resultingStartsAt, resultingEndsAt, occurredAt = null,
+  }) {
+    if (!contactWaId || !sourceMessageId || !previousStartsAt || !previousEndsAt || !resultingStartsAt || !resultingEndsAt) {
+      throw new TypeError('contactWaId, sourceMessageId, and both appointment slots are required.');
+    }
+    const client = await resolvedPool.connect();
+    try {
+      await client.query('begin');
+      if (await hasAppointmentSourceEvent(client, sourceMessageId)) {
+        await client.query('commit');
+        return null;
+      }
+      const appointment = await findConfirmedAppointmentWith(client, {
+        contactWaId, startsAt: previousStartsAt, endsAt: previousEndsAt,
+      });
+      if (appointment === null) {
+        await client.query('commit');
+        return null;
+      }
+      const updated = await client.query({
+        text: `update appointments set starts_at = $2, ends_at = $3, updated_at = coalesce($4, now())
+          where id = $1 returning id, appointment_request_id, starts_at, ends_at, status`,
+        values: [appointment.id, resultingStartsAt, resultingEndsAt, occurredAt],
+      });
+      const row = updated.rows[0];
+      await client.query({
+        text: `insert into appointment_events (
+          appointment_request_id, appointment_id, source_message_id, event_type, actor_kind,
+          previous_starts_at, previous_ends_at, resulting_starts_at, resulting_ends_at, occurred_at
+        ) values ($1, $2, $3, 'rescheduled', 'clinic_whatsapp_business_account', $4, $5, $6, $7, coalesce($8, now()))`,
+        values: [appointment.appointment_request_id, appointment.id, sourceMessageId,
+          previousStartsAt, previousEndsAt, resultingStartsAt, resultingEndsAt, occurredAt],
+      });
+      await client.query('commit');
+      return row;
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async function recordAppointmentAttendance({
+    contactWaId, sourceMessageId, startsAt, endsAt, occurredAt = null,
+  }) {
+    if (!contactWaId || !sourceMessageId || !startsAt || !endsAt) {
+      throw new TypeError('contactWaId, sourceMessageId, startsAt, and endsAt are required.');
+    }
+    const client = await resolvedPool.connect();
+    try {
+      await client.query('begin');
+      if (await hasAppointmentSourceEvent(client, sourceMessageId)) {
+        await client.query('commit');
+        return null;
+      }
+      const appointment = await findConfirmedAppointmentWith(client, { contactWaId, startsAt, endsAt, requireEnded: true });
+      if (appointment === null) {
+        await client.query('commit');
+        return null;
+      }
+      const updated = await client.query({
+        text: "update appointments set attendance_status = 'attended', updated_at = coalesce($2, now()) where id = $1 returning id, appointment_request_id, starts_at, ends_at, status, attendance_status",
+        values: [appointment.id, occurredAt],
+      });
+      await client.query({
+        text: `insert into appointment_events (
+          appointment_request_id, appointment_id, source_message_id, event_type, actor_kind,
+          previous_starts_at, previous_ends_at, resulting_starts_at, resulting_ends_at, attendance_status, occurred_at
+        ) values ($1, $2, $3, 'attendance_recorded', 'clinic_whatsapp_business_account', $4, $5, $4, $5, $6, coalesce($7, now()))`,
+        values: [appointment.appointment_request_id, appointment.id, sourceMessageId,
+          startsAt, endsAt, 'attended', occurredAt],
+      });
+      await client.query('commit');
+      return updated.rows[0];
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   return {
+    cancelConfirmedAppointment,
+    confirmSinglePendingAppointmentRequest,
+    createAppointmentRequest,
+    findPersistedMessageIdByInfobipId,
     getFaqBotContext,
     insertMessage,
     persistOutboundMessage,
     persistWebhookMessage,
     ping,
+    recordAppointmentAttendance,
     recordDeliveryStatus,
+    rescheduleConfirmedAppointment,
     upsertContact,
     verifySchema,
   };

@@ -7,11 +7,14 @@ test('runtime configuration has safe defaults and does not require integrations 
     port: 3000,
     databaseUrl: undefined,
     chatManagerApiToken: undefined,
+    appointmentConfirmationUtcOffset: undefined,
     infobip: {
       apiKey: undefined,
       baseUrl: undefined,
       whatsappSender: undefined,
       webhookToken: undefined,
+      webhookHmacSecret: undefined,
+      webhookHmacAlgorithm: 'HMAC_SHA_256',
     },
   });
 });
@@ -21,16 +24,22 @@ test('runtime configuration trims supplied values and validates the port', () =>
     PORT: ' 8080 ',
     DATABASE_URL: ' postgres://database ',
     CHATMANAGER_API_TOKEN: ' internal-token ',
+    APPOINTMENT_CONFIRMATION_UTC_OFFSET: ' -03:00 ',
     INFOBIP_BASE_URL: ' https://tenant.example ',
     INFOBIP_API_KEY: ' secret ',
     INFOBIP_WHATSAPP_SENDER: ' sender ',
     INFOBIP_WEBHOOK_TOKEN: ' receiver-token ',
+    INFOBIP_WEBHOOK_HMAC_SECRET: ' signing-secret ',
+    INFOBIP_WEBHOOK_HMAC_ALGORITHM: ' HMAC_SHA_512 ',
   });
 
   assert.equal(config.port, 8080);
   assert.equal(config.databaseUrl, 'postgres://database');
   assert.equal(config.chatManagerApiToken, 'internal-token');
+  assert.equal(config.appointmentConfirmationUtcOffset, '-03:00');
   assert.equal(config.infobip.webhookToken, 'receiver-token');
+  assert.equal(config.infobip.webhookHmacSecret, 'signing-secret');
+  assert.equal(config.infobip.webhookHmacAlgorithm, 'HMAC_SHA_512');
   assert.deepEqual(requireInfobipConfig(config), {
     baseUrl: 'https://tenant.example',
     apiKey: 'secret',

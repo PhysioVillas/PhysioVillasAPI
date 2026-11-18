@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import test from 'node:test';
 import { createApp } from '../src/app.js';
 import { normalizeInfobipWebhookPayload } from '../src/services/infobipWebhookNormalizer.js';
+
+function hmacSignature(body, secret, algorithm = 'sha256') {
+  return createHmac(algorithm, secret).update(Buffer.from(body)).digest('hex');
+}
 
 async function withServer(app, callback) {
   const server = app.listen(0);
@@ -66,6 +71,7 @@ const expectedCoexistenceEcho = {
     waId: '557188887777',
     direction: 'out',
     sentVia: 'business_app',
+    sourceSender: '5571900000000',
     body: 'Resposta da clínica',
     messageType: 'text',
     status: 'sent',
@@ -260,6 +266,77 @@ test('inbound webhook normalizes a documented WhatsApp inbound event and persist
   }]);
 });
 
+test('authenticated retries resume an appointment request by stored message id and remain idempotent', async (t) => {
+  t.mock.method(console, 'error', () => {});
+  const providerMessageId = 'infobip-appointment-request-1';
+  const internalMessageId = 'stored-appointment-message-1';
+  const payload = inboundPayload({
+    messageId: providerMessageId,
+    message: { type: 'TEXT', text: 'AGENDAR | FISIOTERAPIA | MOISES | 2026-12-01 | 07:30' },
+  });
+  const persistedSourceIds = [];
+  const lookupIds = [];
+  const appointmentRequestSources = new Set();
+  let persistAttempts = 0;
+  let appointmentAttempts = 0;
+  let appointmentMutations = 0;
+  let faqReplies = 0;
+  const database = {
+    persistWebhookMessage: async () => {
+      persistAttempts += 1;
+      return persistAttempts === 1 ? { message: { id: internalMessageId } } : { message: null };
+    },
+    findPersistedMessageIdByInfobipId: async (id) => {
+      lookupIds.push(id);
+      return id === providerMessageId ? internalMessageId : null;
+    },
+    createAppointmentRequest: async ({ sourceMessageId }) => {
+      appointmentAttempts += 1;
+      persistedSourceIds.push(sourceMessageId);
+      if (appointmentAttempts === 1) throw new Error('temporary appointment transaction failure');
+      if (appointmentRequestSources.has(sourceMessageId)) return null;
+      appointmentRequestSources.add(sourceMessageId);
+      appointmentMutations += 1;
+      return { id: 'appointment-request-1' };
+    },
+  };
+  const app = createApp({
+    database,
+    infobipWebhookToken: 'receiver-token',
+    whatsappSender: 'clinic-sender',
+    appointmentConfirmationUtcOffset: '-03:00',
+    faqBot: { handleInbound: async () => { faqReplies += 1; } },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const sendRetry = () => fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer receiver-token',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const failedAttempt = await sendRetry();
+    assert.equal(failedAttempt.status, 500);
+
+    const recoveredAttempt = await sendRetry();
+    assert.equal(recoveredAttempt.status, 200);
+    assert.deepEqual(await recoveredAttempt.json(), { accepted: 1, ignored: 0 });
+
+    const duplicateAfterSuccess = await sendRetry();
+    assert.equal(duplicateAfterSuccess.status, 200);
+    assert.deepEqual(await duplicateAfterSuccess.json(), { accepted: 1, ignored: 0 });
+  });
+
+  assert.equal(persistAttempts, 3);
+  assert.deepEqual(lookupIds, [providerMessageId, providerMessageId]);
+  assert.deepEqual(persistedSourceIds, [internalMessageId, internalMessageId, internalMessageId]);
+  assert.equal(appointmentMutations, 1);
+  assert.equal(faqReplies, 0);
+});
+
 test('inbound webhook acknowledges unsupported events without storing their raw payload', async () => {
   const calls = [];
   const app = createApp({
@@ -411,12 +488,11 @@ test('inbound webhook reports malformed JSON without exposing parser details', a
   });
 });
 
-test('inbound webhook accepts unauthenticated requests only when the capture bypass is explicitly enabled', async () => {
+test('inbound webhook never accepts the removed unauthenticated bypass', async () => {
   const calls = [];
   const app = createApp({
     database: { persistWebhookMessage: async (message) => calls.push(message) },
     infobipWebhookToken: 'receiver-token',
-    allowUnauthenticatedInbound: true,
   });
 
   await withServer(app, async (baseUrl) => {
@@ -426,8 +502,92 @@ test('inbound webhook accepts unauthenticated requests only when the capture byp
       body: JSON.stringify(coexistenceEchoPayload()),
     });
 
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 401);
   });
 
+  assert.equal(calls.length, 0);
+});
+
+test('inbound webhook authenticates Infobip HMAC against the exact raw request body', async () => {
+  const calls = [];
+  const secret = 'test-signing-secret';
+  const body = JSON.stringify(inboundPayload());
+  const app = createApp({
+    database: { persistWebhookMessage: async (message) => calls.push(message) },
+    infobipWebhookHmacSecret: secret,
+    infobipWebhookHmacAlgorithm: 'HMAC_SHA_256',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'X-Hub-Signature': hmacSignature(body, secret) },
+      body,
+    });
+
+    assert.equal(response.status, 200);
+  });
   assert.equal(calls.length, 1);
+});
+
+test('inbound webhook rejects missing, malformed, or incorrect HMAC before persistence', async () => {
+  const calls = [];
+  const body = JSON.stringify(inboundPayload());
+  const app = createApp({
+    database: { persistWebhookMessage: async (message) => calls.push(message) },
+    infobipWebhookHmacSecret: 'test-signing-secret',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    for (const signature of [undefined, 'not-a-signature', hmacSignature(body, 'wrong-secret')]) {
+      const headers = { 'content-type': 'application/json' };
+      if (signature !== undefined) headers['X-Hub-Signature'] = signature;
+      const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, { method: 'POST', headers, body });
+      assert.equal(response.status, 401);
+    }
+  });
+  assert.equal(calls.length, 0);
+});
+
+test('an absent webhook token cannot authenticate as the literal undefined bearer value', async () => {
+  let persisted = 0;
+  const app = createApp({
+    database: { persistWebhookMessage: async () => { persisted += 1; } },
+    infobipWebhookHmacSecret: 'test-hmac-secret',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer undefined', 'content-type': 'application/json' },
+      body: JSON.stringify(inboundPayload()),
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(persisted, 0);
+  });
+});
+
+test('a configured HMAC cannot be bypassed with a valid legacy bearer token', async () => {
+  let persisted = 0;
+  const app = createApp({
+    database: { persistWebhookMessage: async () => { persisted += 1; } },
+    infobipWebhookToken: 'legacy-token',
+    infobipWebhookHmacSecret: 'current-hmac-secret',
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer legacy-token',
+        'X-Hub-Signature': hmacSignature(JSON.stringify(inboundPayload()), 'incorrect-secret'),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(inboundPayload()),
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(persisted, 0);
+  });
 });

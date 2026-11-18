@@ -2,6 +2,52 @@
 
 **Data do registro:** 2026-09-20
 
+## Estado atual — 2026-11-18 (local e produção)
+
+Esta seção substitui afirmações antigas abaixo quando houver conflito. O
+repositório local contém uma implementação de agenda pelo WhatsApp e um modelo
+Power BI preparado para ler métricas agregadas; isso ainda não significa que
+essas partes estejam aplicadas ou funcionando em produção.
+
+- **Agenda/API local:** `db/migrations/009_appointments.sql` define pedidos,
+  consultas, histórico de eventos e views agregadas. A grade de segunda a
+  sexta e as capacidades definidas pela clínica estão em
+  `src/config/appointmentSchedule.js`. `src/services/appointmentService.js`
+  interpreta o pedido estruturado e verifica vagas; a equipe precisa confirmar
+  no WhatsApp Business. A confirmação volta a validar conflitos e capacidade
+  no banco. A regra de fisioterapia é até seis pacientes simultâneos por faixa
+  de 30 minutos, inclusive com o mesmo fisioterapeuta; RPG/Pilates com Luarca
+  compartilham a restrição de não sobreposição.
+- **Segurança do webhook:** `src/middleware/infobipWebhookAuth.js` valida
+  autenticação HMAC sobre o corpo original quando configurada e impede que o
+  token legado contorne uma assinatura inválida. A produção ainda não tem
+  confirmação de segredo HMAC correspondente configurado na Vercel e no
+  provedor. Não ativar comandos que alterem consultas nem publicar esta versão
+  antes de validar uma chamada autenticada real.
+- **BI local:** o PBIP em `bi/powerbi/ChatManager/` inclui tabelas semânticas e
+  páginas para mensagens, fluxo, respostas humanas e agenda. A agenda traz
+  pedidos, estados, eventos, profissional/serviço e ocupação de vagas. O BI
+  deve usar apenas as views agregadas `reporting`, com uma credencial
+  somente-leitura. A atualização no Power BI Desktop/Service e a atualização
+  agendada ainda não foram confirmadas; credenciais e serviço não foram
+  publicados por esta alteração.
+- **Produção/Neon:** a última inspeção somente leitura encontrou as tabelas
+  operacionais e três views analíticas antigas, mas nenhum `schema_migrations`,
+  objeto da agenda ou view nova. Nenhum SQL desta entrega foi executado no
+  Neon. A reconciliação precisa registrar os checksums de 001–008 após a
+  verificação de pré-condições e, em seguida, aplicar 009 pelo executor normal;
+  o roteiro seguro está em `db/provisioning/reconcile_legacy_migrations.sql`.
+- **Validação local:** `npm test` passou com 129 testes, `npm run check` passou
+  e `npm audit --omit=dev` reportou zero vulnerabilidades. Isso não substitui
+  homologação com webhook assinado, atualização do Power BI conectado ao Neon,
+  nem validação de produção.
+
+**Liberação:** não enviar para `main`/produção enquanto faltarem a
+reconciliação e aplicação do banco, a configuração e validação da autenticação
+do webhook nos dois lados e a confirmação de refresh do BI. A solicitação de
+agendamento ainda usa texto estruturado, não uma seleção interativa de horários
+livres.
+
 ## Atualização — 2026-10-21: bot de FAQ no backend
 
 Por decisão do time, o FAQ/autoatendimento passou a ser executado pelo

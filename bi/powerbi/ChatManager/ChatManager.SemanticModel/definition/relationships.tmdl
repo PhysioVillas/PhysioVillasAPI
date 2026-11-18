@@ -9,3 +9,19 @@ relationship DailyWhatsAppFlowMetrics_activity_date_DimDate
 relationship DailyHumanResponseMetrics_activity_date_DimDate
 	fromColumn: DailyHumanResponseMetrics.activity_date
 	toColumn: DimDate.activity_date
+
+relationship DailyAppointmentEventMetrics_activity_date_DimDate
+	fromColumn: DailyAppointmentEventMetrics.activity_date
+	toColumn: DimDate.activity_date
+
+relationship AppointmentRequestStatusMetrics_request_date_DimDate
+	fromColumn: AppointmentRequestStatusMetrics.request_date
+	toColumn: DimDate.activity_date
+
+relationship ScheduledAppointmentMetrics_scheduled_date_DimDate
+	fromColumn: ScheduledAppointmentMetrics.scheduled_date
+	toColumn: DimDate.activity_date
+
+relationship AppointmentSlotCapacityMetrics_slot_date_DimDate
+	fromColumn: AppointmentSlotCapacityMetrics.slot_date
+	toColumn: DimDate.activity_date

@@ -1,0 +1,77 @@
+table AppointmentSlotCapacityMetrics
+	lineageTag: 81009b09-dfde-46e0-85bd-3df11a49ab59
+
+	column slot_date
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 9a403d09-5e6e-4e6d-8c53-857363163e76
+		summarizeBy: none
+		sourceColumn: slot_date
+		annotation UnderlyingDateTimeDataType = Date
+
+	column slot_time
+		dataType: string
+		lineageTag: 8166dbdb-aa38-4dd7-83ea-4454454a6408
+		summarizeBy: none
+		sourceColumn: slot_time
+
+	column service_code
+		dataType: string
+		lineageTag: fae723ce-3778-47eb-97ee-192b379945d3
+		summarizeBy: none
+		sourceColumn: service_code
+
+	column service_name
+		dataType: string
+		lineageTag: f3ed7b2b-7b79-4b44-9831-fdcaf0ff9442
+		summarizeBy: none
+		sourceColumn: service_name
+
+	column professional_code
+		dataType: string
+		lineageTag: 8163a9ab-945c-49f2-9e93-762f31e4e90b
+		summarizeBy: none
+		sourceColumn: professional_code
+
+	column professional_name
+		dataType: string
+		lineageTag: d093991f-a6bd-4b3c-8752-d1b91087c629
+		summarizeBy: none
+		sourceColumn: professional_name
+
+	column duration_minutes
+		dataType: int64
+		lineageTag: 3bc7515f-cd98-40dc-b657-4b2d1f8e8ab4
+		summarizeBy: none
+		sourceColumn: duration_minutes
+
+	column capacity_per_slot
+		dataType: int64
+		lineageTag: 5f11c1cc-3eeb-4e41-b9a9-43067e1b1a91
+		summarizeBy: sum
+		sourceColumn: capacity_per_slot
+
+	column confirmed_count
+		dataType: int64
+		lineageTag: 4e891e9a-1747-49fe-b5ba-4e6c63172b81
+		summarizeBy: sum
+		sourceColumn: confirmed_count
+
+	column remaining_capacity
+		dataType: int64
+		lineageTag: 80f22a42-5f35-4d62-a4cf-100d9e5ade4d
+		summarizeBy: sum
+		sourceColumn: remaining_capacity
+
+	partition AppointmentSlotCapacityMetrics = m
+		mode: import
+		source =
+				let
+					Source = PostgreSQL.Database(NeonServer, NeonDatabase),
+					ReportingView = Source{[Schema = "reporting", Item = "appointment_slot_capacity_metrics"]}[Data],
+					TypedColumns = Table.TransformColumnTypes(ReportingView, {{"slot_date", type date}, {"slot_time", type time}, {"service_code", type text}, {"service_name", type text}, {"professional_code", type text}, {"professional_name", type text}, {"duration_minutes", Int64.Type}, {"capacity_per_slot", Int64.Type}, {"confirmed_count", Int64.Type}, {"remaining_capacity", Int64.Type}}),
+					FormattedTime = Table.TransformColumns(TypedColumns, {{"slot_time", each Time.ToText(_, "HH:mm"), type text}})
+				in
+					FormattedTime
+
+	annotation PBI_ResultType = Table

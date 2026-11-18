@@ -61,6 +61,35 @@ table _Medidas
 		formatString: 0.0
 		lineageTag: 97811b56-f953-4d29-b0b1-f7187c3fb7a1
 
+	measure 'Pedidos de agendamento pendentes' = COALESCE ( CALCULATE ( SUM ( AppointmentRequestStatusMetrics[request_count] ), AppointmentRequestStatusMetrics[status] = "requested" ), 0 )
+		formatString: #,0
+		lineageTag: 78ddccd5-26af-48fb-8014-7ee074f947ad
+
+	measure 'Consultas confirmadas' = COALESCE ( CALCULATE ( SUM ( ScheduledAppointmentMetrics[appointment_count] ), ScheduledAppointmentMetrics[status] = "confirmed" ), 0 )
+		formatString: #,0
+		lineageTag: 7ec64c0b-4cba-4aa5-b055-0c39f845c1cc
+
+	measure 'Consultas canceladas' = COALESCE ( CALCULATE ( SUM ( ScheduledAppointmentMetrics[appointment_count] ), ScheduledAppointmentMetrics[status] = "cancelled" ), 0 )
+		formatString: #,0
+		lineageTag: 239243e4-310b-4b30-9ab5-527bac0406b1
+
+	measure 'Cancelamentos registrados' = COALESCE ( CALCULATE ( SUM ( DailyAppointmentEventMetrics[event_count] ), DailyAppointmentEventMetrics[event_type] = "cancelled" ), 0 )
+		formatString: #,0
+		lineageTag: 6a3d4a21-dcbd-468a-beb7-0f4590ba2e76
+
+	measure 'Consultas atendidas' = COALESCE ( CALCULATE ( [Consultas confirmadas], ScheduledAppointmentMetrics[attendance_status] = "attended" ), 0 )
+		formatString: #,0
+		lineageTag: b8246863-03d5-4da6-8307-772ac35995c5
+
+	measure 'Vagas livres' = COALESCE ( CALCULATE ( COUNTROWS ( AppointmentSlotCapacityMetrics ), AppointmentSlotCapacityMetrics[remaining_capacity] > 0 ), 0 )
+		formatString: #,0
+		lineageTag: 0d0442e4-5cdf-48d7-99c9-e68bb2f3ba68
+
+	measure 'Taxa de ocupação da agenda' = DIVIDE ( SUM ( AppointmentSlotCapacityMetrics[confirmed_count] ), SUM ( AppointmentSlotCapacityMetrics[capacity_per_slot] ) )
+		formatString: 0.0%
+		lineageTag: 39b01abe-90c2-43bb-ac47-f8fbfe6615a0
+
+
 	column Coluna
 		dataType: string
 		isHidden

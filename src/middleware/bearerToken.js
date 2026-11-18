@@ -1,7 +1,9 @@
 import { timingSafeEqual } from 'node:crypto';
 
 function hasExpectedBearerToken(request, token) {
-  const authorization = request.get('authorization');
+  if (typeof token !== 'string' || token.length === 0) return false;
+
+  const authorization = request.get?.('authorization') ?? request.headers?.authorization;
   const expected = `Bearer ${token}`;
 
   if (typeof authorization !== 'string') {

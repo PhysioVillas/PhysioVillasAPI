@@ -25,11 +25,14 @@ function getRuntimeConfig(env = process.env) {
     port: readPort(env),
     databaseUrl: readOptional(env, 'DATABASE_URL'),
     chatManagerApiToken: readOptional(env, 'CHATMANAGER_API_TOKEN'),
+    appointmentConfirmationUtcOffset: readOptional(env, 'APPOINTMENT_CONFIRMATION_UTC_OFFSET'),
     infobip: {
       apiKey: readOptional(env, 'INFOBIP_API_KEY'),
       baseUrl: readOptional(env, 'INFOBIP_BASE_URL'),
       whatsappSender: readOptional(env, 'INFOBIP_WHATSAPP_SENDER'),
       webhookToken: readOptional(env, 'INFOBIP_WEBHOOK_TOKEN'),
+      webhookHmacSecret: readOptional(env, 'INFOBIP_WEBHOOK_HMAC_SECRET'),
+      webhookHmacAlgorithm: readOptional(env, 'INFOBIP_WEBHOOK_HMAC_ALGORITHM') ?? 'HMAC_SHA_256',
     },
   };
 }

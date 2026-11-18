@@ -8,12 +8,15 @@ model ChatManagerBI
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["DailyMessageMetrics","DailyWhatsAppFlowMetrics","DailyHumanResponseMetrics","DimDate","NeonServer","NeonDatabase"]
+annotation PBI_QueryOrder = ["DailyMessageMetrics","DailyWhatsAppFlowMetrics","DailyHumanResponseMetrics","DailyAppointmentEventMetrics","AppointmentRequestStatusMetrics","ScheduledAppointmentMetrics","DimDate","NeonServer","NeonDatabase"]
 
 annotation PBI_ProTooling = ["DevMode"]
 
 ref table DailyMessageMetrics
 ref table DailyWhatsAppFlowMetrics
 ref table DailyHumanResponseMetrics
+ref table DailyAppointmentEventMetrics
+ref table AppointmentRequestStatusMetrics
+ref table ScheduledAppointmentMetrics
 ref table DimDate
 ref table _Medidas

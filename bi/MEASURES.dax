@@ -80,3 +80,19 @@ DIVIDE (
     ),
     SUM ( DailyHumanResponseMetrics[response_count] ) * 60
 )
+
+-- Tabela: AppointmentRequestStatusMetrics e ScheduledAppointmentMetrics
+Pedidos de agendamento pendentes =
+COALESCE ( CALCULATE ( SUM ( AppointmentRequestStatusMetrics[request_count] ), AppointmentRequestStatusMetrics[status] = "requested" ), 0 )
+
+Consultas confirmadas =
+COALESCE ( CALCULATE ( SUM ( ScheduledAppointmentMetrics[appointment_count] ), ScheduledAppointmentMetrics[status] = "confirmed" ), 0 )
+
+Consultas canceladas =
+COALESCE ( CALCULATE ( SUM ( ScheduledAppointmentMetrics[appointment_count] ), ScheduledAppointmentMetrics[status] = "cancelled" ), 0 )
+
+Consultas atendidas =
+COALESCE ( CALCULATE ( [Consultas confirmadas], ScheduledAppointmentMetrics[attendance_status] = "attended" ), 0 )
+
+Cancelamentos registrados =
+COALESCE ( CALCULATE ( SUM ( DailyAppointmentEventMetrics[event_count] ), DailyAppointmentEventMetrics[event_type] = "cancelled" ), 0 )

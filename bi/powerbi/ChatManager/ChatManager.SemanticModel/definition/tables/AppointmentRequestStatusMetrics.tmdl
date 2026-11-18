@@ -1,0 +1,59 @@
+table AppointmentRequestStatusMetrics
+	lineageTag: 7dd313de-1c8a-4c84-bf80-edc3b333180c
+
+	column request_date
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: 849f2e07-3747-428e-a11e-a9d6266d5b6c
+		summarizeBy: none
+		sourceColumn: request_date
+		annotation UnderlyingDateTimeDataType = Date
+
+	column status
+		dataType: string
+		lineageTag: a6038e9e-f37e-4ac2-82aa-fbd3a396b6a4
+		summarizeBy: none
+		sourceColumn: status
+
+	column service_code
+		dataType: string
+		lineageTag: 0d47e8f5-1840-4672-8b0f-775fd2fd1270
+		summarizeBy: none
+		sourceColumn: service_code
+
+	column service_name
+		dataType: string
+		lineageTag: c8b1d328-fdb6-4e16-94f9-01d5e2d02d20
+		summarizeBy: none
+		sourceColumn: service_name
+
+	column professional_code
+		dataType: string
+		lineageTag: d551f1c4-8ef3-43e9-a331-c7728199c0a6
+		summarizeBy: none
+		sourceColumn: professional_code
+
+	column professional_name
+		dataType: string
+		lineageTag: 36b01e90-abcf-4d26-aafe-d536ee707034
+		summarizeBy: none
+		sourceColumn: professional_name
+
+	column request_count
+		dataType: int64
+		formatString: #,0
+		lineageTag: 0c7e8c9d-a26c-45b9-88f2-d44350ff2d8a
+		summarizeBy: sum
+		sourceColumn: request_count
+
+	partition AppointmentRequestStatusMetrics = m
+		mode: import
+		source =
+				let
+					Source = PostgreSQL.Database(NeonServer, NeonDatabase),
+					ReportingView = Source{[Schema = "reporting", Item = "appointment_request_status_metrics"]}[Data],
+					TypedColumns = Table.TransformColumnTypes(ReportingView, {{"request_date", type date}, {"status", type text}, {"service_code", type text}, {"service_name", type text}, {"professional_code", type text}, {"professional_name", type text}, {"request_count", Int64.Type}})
+				in
+					TypedColumns
+
+	annotation PBI_ResultType = Table

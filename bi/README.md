@@ -1,37 +1,49 @@
 # Power BI do ChatManager
 
-O projeto inicial do relatório está em [`powerbi/ChatManager/ChatManager.pbip`](powerbi/ChatManager/ChatManager.pbip). Ele tem duas páginas no formato do protótipo visual recebido: **Visão geral** e **Fluxo WhatsApp**. O modelo usa somente as views reais de mensagens, eventos do fluxo e primeira resposta humana observada; não traz as tabelas fictícias de agenda, financeiro, pacientes ou campanhas do arquivo de referência.
+O projeto do relatório está em [`powerbi/ChatManager/ChatManager.pbip`](powerbi/ChatManager/ChatManager.pbip). Ele contém **Visão geral**, **Fluxo WhatsApp** e **Agendamentos**. As duas primeiras páginas mostram indicadores já disponíveis no banco atual. A página de agenda e suas medidas são um preparo local para a migração `009_appointments.sql`; não haverá números reais de agenda até essa migração e o fluxo seguro de confirmação estarem ativos.
 
-O projeto foi configurado para Importar dados pelo conector PostgreSQL nativo do Power BI. Host e usuário/senha de leitura são configurados localmente no Power BI Desktop; nenhum segredo ou valor real de host é versionado. O primeiro refresh exige configurar o endpoint pooled do Neon e a credencial `powerbi_reader`.
+O projeto usa o conector PostgreSQL nativo do Power BI em modo Import. Ao abrir o projeto em uma nova máquina, configure `NeonServer` com o endpoint pooled do ambiente escolhido. Informe a credencial de leitura `powerbi_reader` diretamente no Power BI.
 
 ## Preparação
 
 1. Extraia/clone o repositório e abra `bi/powerbi/ChatManager/ChatManager.pbip` no Power BI Desktop recente.
-2. Em **Transformar dados > Gerenciar parâmetros**, substitua `NeonServer` pelo host pooled do Neon, com `:5432`, e mantenha `NeonDatabase` como `neondb`.
+2. Em **Transformar dados > Gerenciar parâmetros**, confirme `NeonServer` com o host pooled do Neon e `:5432`, e `NeonDatabase` como `neondb`. Se o Power BI já estava aberto durante a mudança do arquivo, clique em **Aplicar alterações externas** antes de atualizar.
 3. Quando solicitado, use a autenticação de banco de dados para a role `powerbi_reader`, informe a senha guardada no cofre e habilite SSL. Não cole a senha em arquivo do projeto ou no GitHub.
-4. Atualize o modelo e confirme que as tabelas carregadas são apenas as views agregadas `reporting.daily_message_metrics`, `reporting.daily_whatsapp_flow_metrics` e `reporting.daily_human_response_metrics` (mais a dimensão de calendário calculada localmente).
+4. Antes da migração 009, confirme que as tabelas carregadas são apenas `reporting.daily_message_metrics`, `reporting.daily_whatsapp_flow_metrics` e `reporting.daily_human_response_metrics`. Depois que a migração revisada for aplicada, valide também as três views agregadas de agenda; elas não expõem telefone, texto de mensagem ou conteúdo clínico.
 5. Para publicar, configure a credencial da fonte PostgreSQL no Power BI Service e valide um refresh. A publicação/compartilhamento depende da licença e do workspace; o projeto local não o publica automaticamente.
 
-As consultas usam `reporting.daily_message_metrics`,
+As consultas atuais usam `reporting.daily_message_metrics`,
 `reporting.daily_whatsapp_flow_metrics` e
 `reporting.daily_human_response_metrics`, que têm datas em UTC. As três tabelas
-relacionam `activity_date` à dimensão `DimDate`. As medidas DAX fazem parte do
-modelo e também estão documentadas em [`MEASURES.dax`](MEASURES.dax).
+relacionam `activity_date` à dimensão `DimDate`. A página **Agendamentos** usa
+`reporting.appointment_request_status_metrics`,
+`reporting.daily_appointment_event_metrics` e
+`reporting.scheduled_appointment_metrics`, definidas localmente na migração 009.
+As medidas DAX fazem parte do modelo e também estão documentadas em [`MEASURES.dax`](MEASURES.dax).
 `conversation_count` é uma contagem distinta dentro de cada grupo da view e
 não deve ser somada entre eventos. O significado/limite de cada indicador está
 em [`../docs/BI_DATA_CONTRACT.md`](../docs/BI_DATA_CONTRACT.md).
 
 O arquivo `ClinicaFisio_PowerBI_v5.zip` contém sete páginas de referência
-visual, baseadas em dados fictícios e uma planilha local. O relatório do
-ChatManager mantém duas páginas, pois somente mensagens e eventos observados no
-fluxo têm fonte real hoje. As páginas simuladas de agenda, faltas, ocupação,
-financeiro e campanhas podem orientar o design futuro, mas não devem ser
-ligadas a mensagens nem misturadas no modelo atual. Ainda não há fonte para
-agenda, consultas
-concluídas/canceladas, capacidade, cobrança, convênios ou campanhas. O evento
-`menu_agendar` representa intenção de contato e não confirmação de consulta.
-As métricas do fluxo só aparecem após os eventos correspondentes chegarem e o
-modelo ser atualizado.
+visual, baseadas em dados fictícios e uma planilha local. O relatório não usa
+as tabelas fictícias de agenda, faltas, ocupação, financeiro ou campanhas. A
+página de agendamentos é uma preparação local: a migration 009 ainda não foi
+aplicada e não contém dimensões de serviço/profissional. A grade semanal e os
+limites agora estão documentados em `src/config/appointmentSchedule.js`, mas
+ainda não são validados pelo banco nem pelo WhatsApp. O modelo atual só registra
+comparecimento confirmado; não há estado de falta (`no-show`). O webhook de
+produção também precisa de autenticação compatível antes de aceitar comandos
+de agenda. O evento `menu_agendar` sozinho continua sendo uma intenção, não uma
+consulta marcada. Cobrança, convênios e campanhas ainda não têm fontes
+confiáveis.
+
+O cartão de tempo de resposta depende de ecos de mensagens da equipe no
+WhatsApp Business App. Uma contagem zero significa que ainda não há intervalos
+pareados na fonte carregada; não deve ser apresentada como tempo zero de
+atendimento. Depois de abrir o PBIP no Power BI Desktop, é necessário publicar
+o modelo atualizado no workspace escolhido, configurar a credencial do banco,
+executar um refresh e confirmar o histórico de atualização. Alterar o PBIP no
+GitHub não atualiza automaticamente o relatório já publicado.
 
 ## Uso pela equipe
 

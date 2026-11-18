@@ -7,6 +7,7 @@ const reportingSchemaPath = new URL('../db/migrations/002_reporting_views.sql', 
 const deliveryStatusSchemaPath = new URL('../db/migrations/004_message_delivery_status.sql', import.meta.url);
 const activeConversationSchemaPath = new URL('../db/migrations/005_active_conversations.sql', import.meta.url);
 const flowReportingSchemaPath = new URL('../db/migrations/007_whatsapp_flow_reporting.sql', import.meta.url);
+const appointmentsSchemaPath = new URL('../db/migrations/009_appointments.sql', import.meta.url);
 
 test('initial database migration preserves the reporting and webhook invariants', async () => {
   const schema = await readFile(schemaPath, 'utf8');
@@ -17,6 +18,29 @@ test('initial database migration preserves the reporting and webhook invariants'
   assert.match(schema, /direction in \('in', 'out'\)/i);
   assert.match(schema, /sent_via text check \(sent_via in \('api', 'business_app'\)\)/i);
   assert.match(schema, /created_at timestamptz not null default now\(\)/i);
+});
+
+test('appointment migration persists scheduled service/provider data, enforces clinic capacity, and exposes local-time aggregates', async () => {
+  const schema = await readFile(appointmentsSchemaPath, 'utf8');
+  const reportingSql = schema.slice(schema.indexOf('create or replace view reporting.daily_appointment_event_metrics')).replace(/^--.*$/gm, '');
+  const reportingSelect = reportingSql.slice(0, reportingSql.indexOf('from appointment_events'));
+
+  assert.match(schema, /create table if not exists appointment_requests/i);
+  assert.match(schema, /preferred_professional_code text not null/i);
+  assert.match(schema, /preferred_starts_at timestamptz not null/i);
+  assert.match(schema, /capacity_per_slot smallint not null/i);
+  assert.match(schema, /pg_advisory_xact_lock/i);
+  assert.match(schema, /capacity_scope = 'service_slot'/i);
+  assert.match(schema, /appointment\.professional_code = slot\.professional_code/i);
+  assert.match(schema, /create trigger appointment_events_immutable/i);
+  assert.match(schema, /previous_starts_at/i);
+  assert.match(schema, /resulting_starts_at/i);
+  assert.match(schema, /scheduled_date/i);
+  assert.match(schema, /scheduled_time/i);
+  assert.match(schema, /appointment_slot_capacity_metrics/i);
+  assert.match(schema, /America\/Bahia/i);
+  assert.match(schema, /attendance_status = 'attended'/i);
+  assert.doesNotMatch(reportingSelect, /\b(contact_wa_id|source_message_id|appointment_id|appointment_request_id|body|payload)\b/i);
 });
 
 test('reporting migration exposes only aggregate operational metrics', async () => {

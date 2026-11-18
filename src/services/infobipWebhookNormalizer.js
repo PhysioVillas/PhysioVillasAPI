@@ -109,6 +109,7 @@ function normalizeMessageEcho(echo) {
       waId,
       direction: 'out',
       sentVia: 'business_app',
+      sourceSender: readNonEmptyString(echo.from),
       body: readNonEmptyString(echo.text?.body),
       messageType: messageType.toLowerCase(),
       status: 'sent',
