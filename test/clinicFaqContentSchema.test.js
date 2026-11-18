@@ -39,3 +39,13 @@ test('migration 013 states the fictitious address and the 24 h rule', async () =
   assert.match(sql, /24 horas/);
   assert.match(sql, /status = 'archived'/);
 });
+
+test('migration 013 renames the demo patients so the greeting uses a real first name', async () => {
+  const code = (await readFile(path, 'utf8')).replace(/^--.*$/gm, '');
+
+  assert.match(code, /update clinica_simulada\.d_pacientes p\s+set paciente = v\.nome/i);
+  for (const cpf of ['80590844296', '78836009581', '77081174884', '75326340194', '73571505425']) {
+    assert.match(code, new RegExp(`'${cpf}'`));
+  }
+  assert.match(code, /p\.paciente is distinct from v\.nome/i);
+});

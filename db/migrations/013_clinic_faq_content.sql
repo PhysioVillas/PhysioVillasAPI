@@ -59,5 +59,20 @@ begin
           reviewed_at = now(),
           updated_at = now();
 
+    -- Pacientes de demonstracao da 011: o bot cumprimenta pelo primeiro nome,
+    -- entao "Demo Ana Teste" viraria "Ola, Demo". Ajusta para "Ana Teste" etc.
+    -- (mesmos CPFs ficticios fixos; ids 2680-2684 em production).
+    update clinica_simulada.d_pacientes p
+       set paciente = v.nome
+      from (values
+        ('80590844296', 'Ana Teste'),
+        ('78836009581', 'Bruno Teste'),
+        ('77081174884', 'Carla Teste'),
+        ('75326340194', 'Diego Teste'),
+        ('73571505425', 'Elisa Teste')
+      ) as v(cpf, nome)
+     where p.cpf = v.cpf
+       and p.paciente is distinct from v.nome;
+
   end if;
 end $$;
