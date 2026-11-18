@@ -605,6 +605,7 @@ sobrescrita no fim:
       também amplia `whatsapp_flow_events_check` (passos `<fluxo>:<passo>`) e
       `handoffs_reason_check` (`team_takeover`).
 - [ ] Fazer deploy na Vercel (só depois da 014, que já está aplicada).
+- [x] W6: T19 (lembretes, atrás de flag) e T20 (documentação e roteiro) mesclados em 2026-11-18; T21 cortado.
 - [ ] Mandar "oi" do número de teste e conferir se o menu novo chega.
 
 ### W6 — acabamento

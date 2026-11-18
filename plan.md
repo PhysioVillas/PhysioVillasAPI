@@ -349,7 +349,7 @@ a equipe. Faltas: ~6% com lembrete confirmado, ~35% sem confirmação.
 | **2. Agenda** | Marcar (contato já conhecido), CPF, minhas consultas, remarcar e cancelar com a regra de 24 h, `audit_log` | Feito: fluxos `booking` e `my_appointments`, `appointmentRepository.js` |
 | **3. Paciente novo** | Triagem + cadastro + `f_leads` com etapa e abandono | Feito: fluxo `triage`, `patientRepository.js` |
 | **4. Métricas** | Views em `reporting` e páginas do Power BI para a apresentação | Feito: views `reporting.bot_*` (migration 014); páginas do Power BI pendentes |
-| **5. Mensagens ativas** | Lembretes com confirmação e encaixe (depende de templates aprovados) | Em andamento (T19), atrás de flag desligada até confirmar o template |
+| **5. Mensagens ativas** | Lembretes com confirmação e encaixe (depende de templates aprovados) | Feito atrás de flag desligada (T19, `npm run schedule-reminders`); template e botões ainda não confirmados na Infobip |
 
 Cada fase entra com testes (`npm run check`, `npm test`) e atualiza
 `docs/IMPLEMENTATION_STATUS.md` e `CLAUDE.md`, porque a regra "sem lógica de

@@ -40,9 +40,15 @@ Esta seção substitui as anteriores quando houver conflito.
 - **CPF:** mascarado antes de gravar (`messages.body`, `contacts.profile_name`);
   nunca aparece em logs nem em respostas.
 - **Ainda não feito:** deploy na Vercel, ensaio no número de teste (G3),
-  páginas do Power BI sobre as views `reporting.bot_*`. Lembretes (T19) em
-  andamento, atrás de flag desligada. O simulador de conversas (T21) foi
-  cortado.
+  páginas do Power BI sobre as views `reporting.bot_*`. O simulador de
+  conversas (T21) foi cortado.
+- **Lembretes (T19):** implementados atrás da flag `BOT_REMINDERS_ENABLED`
+  (desligada). `npm run schedule-reminders` só gera relatório; o envio exige
+  `--send`, a flag ligada e a lista `BOT_REMINDERS_ALLOWED_WA_IDS`. Falta
+  confirmar na conta Infobip: nome, idioma e variáveis do template aprovado,
+  botões de resposta rápida, formato do clique no webhook, `messageId` por
+  destino, limites do `sendAt` no WhatsApp e cancelamento de envio agendado.
+  Não há cron configurado.
 
 ## Estado atual — 2026-11-17 (agenda e BI)
 

@@ -129,6 +129,20 @@ Infobip retry with the same `messageId` never gets a second reply).
   (allowed by migration 014). Views in `reporting.bot_*` (014) feed Power BI.
 - **Runtime config** lives in table `bot_config` (support hours, 24 h notice,
   CPF attempts, timeouts), not in env vars.
+- **Reminders (T19, off by default)**: `src/services/bot/reminders.js` +
+  `npm run schedule-reminders` (dry-run report; `-- --send` only with
+  `BOT_REMINDERS_ENABLED=true` and `BOT_REMINDERS_ALLOWED_WA_IDS` set; see
+  `.env.example`). Schedules template sends with `sendAt` for `Agendado`
+  appointments 24 h / 4 h ahead, idempotent via
+  `clinica_simulada.messages.infobip_message_id = BOT_REMINDER_<id>_<h>H`. No
+  cron is configured. Buttons Confirmo/Remarcar/Cancelar arrive as
+  `my_appointments:reminder|…` and identify the patient by `wa_id` (no CPF).
+  **Unconfirmed against the Infobip account** (do not treat as facts): the
+  approved template name/language/variables (`lembrete_consulta` vs AUT-01's
+  `physiovilas_appointment_reminder_v1`), its quick-reply buttons, how a
+  button click arrives inbound (assumed `type: BUTTON` with `payload`), the
+  per-destination `messageId` in the send response, WhatsApp `sendAt` limits
+  and cancelling a scheduled send.
 - The old `src/services/faqBot.js` and the `public` agenda path
   (`appointmentService.js`) are kept in the repo but no longer wired.
 - Demo walkthrough: `docs/POC_DEMO_SCRIPT.md`. Wave plan and decisions:
