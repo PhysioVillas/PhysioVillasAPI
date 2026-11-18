@@ -600,7 +600,11 @@ sobrescrita no fim:
 
 ### G2 — ponto de controle humano
 
-- [ ] Mesclar W3–W5, rodar `npm run migrate` (013 e 014) e fazer deploy na Vercel.
+- [x] Mesclar W3–W5 e rodar `npm run migrate` (013 e 014). Feito em
+      2026-11-18, depois de testado num branch temporário do Neon. A 014
+      também amplia `whatsapp_flow_events_check` (passos `<fluxo>:<passo>`) e
+      `handoffs_reason_check` (`team_takeover`).
+- [ ] Fazer deploy na Vercel (só depois da 014, que já está aplicada).
 - [ ] Mandar "oi" do número de teste e conferir se o menu novo chega.
 
 ### W6 — acabamento
