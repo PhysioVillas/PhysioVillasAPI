@@ -18,6 +18,7 @@ import { createAppointmentRepository } from '../clinic/appointmentRepository.js'
 import { createCatalogRepository } from '../clinic/catalogRepository.js';
 import { createPatientRepository } from '../clinic/patientRepository.js';
 import { createDatabase } from '../database.js';
+import { isWithinSupportHours } from './businessHours.js';
 import { findCpfInText, maskCpf } from './cpf.js';
 import { createBotEngine, inboundFromNormalizedMessage } from './engine.js';
 import { bookingFlow } from './flows/booking.js';
@@ -234,8 +235,28 @@ export function createBot({
     if (typeof message?.waId !== 'string' || message.waId === '') {
       return null;
     }
-    const at = message.createdAt ? new Date(message.createdAt) : now();
-    return handoffs.markFirstTeamReply(message.waId, Number.isNaN(at.getTime()) ? now() : at);
+    const parsed = message.createdAt ? new Date(message.createdAt) : now();
+    const at = Number.isNaN(parsed.getTime()) ? now() : parsed;
+
+    // Como o FAQ antigo: resposta da equipe pelo app cala o bot por
+    // handoffSilenceHours. Sem handoff aberto, abre um 'team_takeover'
+    // (motivo criado na migration 014); MENU do paciente reabre o bot.
+    const open = await handoffs.getOpen(message.waId);
+    if (!open) {
+      let inBusinessHours = true;
+      try {
+        const cfg = typeof botConfig?.get === 'function' ? await botConfig.get() : botConfig;
+        if (cfg?.humanSupportHours) {
+          inBusinessHours = isWithinSupportHours(at, cfg.humanSupportHours, cfg.timezone ?? 'America/Bahia');
+        }
+      } catch {
+        // Config indisponível: registra como dentro do horário.
+      }
+      await handoffs.open({ waId: message.waId, reason: 'team_takeover', inBusinessHours });
+      // O estado do fluxo em andamento não vale mais: a equipe assumiu.
+      await stateStore.clear(message.waId);
+    }
+    return handoffs.markFirstTeamReply(message.waId, at);
   }
 
   return { handleInbound, handleTeamReply };

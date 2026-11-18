@@ -9,6 +9,8 @@ export const HANDOFF_REASONS = Object.freeze([
   'bot_failure',
   'identity_failure',
   'document_request',
+  // Migration 014: a equipe respondeu pelo app sem handoff aberto.
+  'team_takeover',
 ]);
 
 const COLUMNS = `id, wa_id, reason, in_business_hours, requested_at,

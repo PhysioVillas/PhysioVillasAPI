@@ -463,6 +463,29 @@ test('handoff silences the bot, a team reply is tracked, and MENU reopens the me
   });
 });
 
+test('a team reply without an open handoff opens team_takeover and silences the bot', async () => {
+  const { pool, client, app } = setup();
+
+  await withServer(app, async (post) => {
+    await post(textPayload('oi'));
+    assert.equal(client.sent.length, 1);
+    assert.equal(pool.db.handoffs.length, 0);
+
+    await post(echoPayload('Oi! Aqui é a equipe, já te ajudo.'));
+    assert.equal(pool.db.handoffs.length, 1);
+    assert.equal(pool.db.handoffs[0].reason, 'team_takeover');
+    assert.deepEqual(pool.db.handoffs[0].first_team_reply_at, NOW);
+
+    await post(textPayload('obrigado'));
+    assert.equal(client.sent.length, 1, 'the bot stays silent after the team takes over');
+
+    await post(textPayload('MENU'));
+    assert.equal(client.sent.length, 2);
+    assert.equal(client.sent[1].type, 'list');
+    assert.notEqual(pool.db.handoffs[0].closed_at, null);
+  });
+});
+
 test('an Infobip retry with the same messageId never produces a second reply', async () => {
   const { pool, client, app } = setup();
   const payload = textPayload('oi', 'in-duplicate');

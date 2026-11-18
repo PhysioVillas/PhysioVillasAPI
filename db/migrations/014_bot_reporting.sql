@@ -21,6 +21,23 @@ alter table public.whatsapp_flow_events
     (event_type = 'team_message_sent' and source = 'team' and step_key is null)
   );
 
+-- Resposta da equipe pelo app WhatsApp Business sem handoff aberto abre um
+-- handoff 'team_takeover', para o bot ficar em silencio como o FAQ antigo
+-- (decisao de 2026-11-18). Os 7 motivos da 010 continuam validos.
+alter table public.handoffs
+  drop constraint if exists handoffs_reason_check;
+alter table public.handoffs
+  add constraint handoffs_reason_check check (reason in (
+    'patient_request',
+    'payment',
+    'clinical_or_urgency',
+    'late_change',
+    'bot_failure',
+    'identity_failure',
+    'document_request',
+    'team_takeover'
+  ));
+
 -- Funil: quantas vezes cada passo '<fluxo>:<passo>' foi enviado pelo bot por dia.
 create or replace view reporting.bot_funnel_daily as
 select

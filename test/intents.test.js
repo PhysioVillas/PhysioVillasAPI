@@ -30,7 +30,8 @@ const cases = [
   ['paguei e não recebi recibo', 'payment'],
 
   // clinical
-  ['tenho dor no joelho', 'clinical'],
+  ['tenho dor no joelho', null],
+  ['tenho dor no joelho, quero agendar', 'book'],
   ['tive uma lesão no ombro', 'clinical'],
   ['posso fazer exercício com dor nas costas', 'clinical'],
   ['quais exercícios posso fazer em casa', 'clinical'],
@@ -92,7 +93,7 @@ const cases = [
   ['urgente, quero pagar', 'urgency'],
   ['quero falar com atendente sobre o pix', 'human'],
   ['quero pagar e tenho dor', 'payment'],
-  ['tenho dor, quero remarcar', 'clinical'],
+  ['tenho dor, quero remarcar', 'reschedule'],
   ['preciso de atendente, tenho dor', 'human'],
 
   // ambiguity and substring safety
@@ -132,7 +133,7 @@ test('keyword matching ignores case, accents and punctuation', () => {
   assert.equal(detectIntent('PIX!!!'), 'payment');
   assert.equal(detectIntent('Cobrança...'), 'payment');
   assert.equal(detectIntent('endereço?'), 'address');
-  assert.equal(detectIntent('dor/joelho'), 'clinical');
+  assert.equal(detectIntent('lesao/joelho'), 'clinical');
 });
 
 test('keyword matching collapses extra spaces', () => {

@@ -66,3 +66,16 @@ test('migration is append-only', async () => {
   assert.doesNotMatch(schema, /\brename\b/i);
   assert.doesNotMatch(schema, /\b(delete\s+from|truncate)\b/i);
 });
+
+test('migration 014 adds the team_takeover handoff reason and keeps the 010 reasons', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(new URL('../db/migrations/014_bot_reporting.sql', import.meta.url), 'utf8');
+  const code = sql.replace(/^--.*$/gm, '');
+
+  assert.match(code, /alter table public\.handoffs\s+drop constraint if exists handoffs_reason_check;/i);
+  assert.match(code, /add constraint handoffs_reason_check check \(reason in \(/i);
+  for (const reason of ['patient_request', 'payment', 'clinical_or_urgency', 'late_change',
+    'bot_failure', 'identity_failure', 'document_request', 'team_takeover']) {
+    assert.match(code, new RegExp(`'${reason}'`));
+  }
+});

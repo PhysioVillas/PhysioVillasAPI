@@ -529,7 +529,7 @@ for (const [inbound, reason] of [
   [buttonReply('btn_atendente'), 'patient_request'],
   [listReply('menu_atendente'), 'patient_request'],
   [text('preciso do boleto'), 'payment'],
-  [text('estou com dor no joelho'), 'clinical_or_urgency'],
+  [text('estou com uma lesão no joelho'), 'clinical_or_urgency'],
   [text('preciso de um atestado'), 'document_request'],
 ]) {
   test(`${inbound.text ?? inbound.replyId} → handoff ${reason}`, async () => {

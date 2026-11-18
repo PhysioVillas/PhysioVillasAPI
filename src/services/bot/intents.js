@@ -61,9 +61,10 @@ export const PAYMENT_KEYWORDS = [
   'valor em aberto',
 ];
 
-// Perguntas clínicas (dor, lesão, exercício) vão para triagem.
+// Perguntas clínicas (lesão, exercício) vão para a equipe.
+// "dor" sozinho NÃO é clínico (decisão de 2026-11-18): "tenho dor no joelho,
+// quero agendar" deve seguir para o agendamento; "muita dor" continua urgência.
 export const CLINICAL_KEYWORDS = [
-  'dor',
   'lesao',
   'lesoes',
   'exercicio',
