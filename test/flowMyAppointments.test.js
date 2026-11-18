@@ -377,3 +377,122 @@ test('free text on a choice step repeats the options as misunderstood', async ()
   assert.equal(result.next.step, 'action');
   assert.equal(result.replies.at(-1).type, 'buttons');
 });
+
+// ---------------------------------------------------------------------------
+// Botões do lembrete (T19): sem estado, paciente pelo wa_id.
+// ---------------------------------------------------------------------------
+
+function reminderRepos({ upcoming = [appointmentAt(24)], byWaId = PATIENT, confirmResult } = {}) {
+  const repos = createRepos({ upcoming });
+  repos.calls.waLookups = [];
+  repos.calls.confirm = [];
+  repos.patients.findPatientByWaId = async (waId) => {
+    repos.calls.waLookups.push(waId);
+    return byWaId;
+  };
+  repos.reminders = {
+    async confirmAttendance(args) {
+      repos.calls.confirm.push(args);
+      return confirmResult ?? { ok: true, appointmentId: args.appointmentId };
+    },
+  };
+  return repos;
+}
+
+const REMINDER_CONFIG = Object.freeze({ ...CONFIG, reminderHoursBefore: [24, 4] });
+
+test('reminder Confirmo without state identifies by wa_id and sets the confirmation', async () => {
+  const repos = reminderRepos();
+  const result = await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|confirm', 'button_reply'),
+  );
+  assert.deepEqual(repos.calls.waLookups, [WA_ID]);
+  assert.equal(repos.calls.cpfLookups.length, 0);
+  assert.deepEqual(repos.calls.confirm, [{ patientId: 7, appointmentId: 101, now: NOW }]);
+  assert.equal(result.next, null);
+  assert.deepEqual(result.events, [{ stepKey: 'my_appointments:reminder_confirmed' }]);
+  assert.match(result.replies[0].body, /Obrigado, Ana! Sua presença em Fisioterapia/);
+});
+
+test('reminder Confirmo with an explicit appointment id picks that appointment', async () => {
+  const repos = reminderRepos({ upcoming: [appointmentAt(24), appointmentAt(30, { id: 202 })] });
+  await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|confirm:202', 'button_reply'),
+  );
+  assert.equal(repos.calls.confirm[0].appointmentId, 202);
+});
+
+test('reminder Confirmo ignores appointments beyond the reminder window', async () => {
+  const repos = reminderRepos({ upcoming: [appointmentAt(24 * 5)] });
+  const result = await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|confirm', 'button_reply'),
+  );
+  assert.equal(repos.calls.confirm.length, 0);
+  assert.equal(result.next.step, 'pick');
+  assert.match(allText(result), /Não encontrei a consulta desse lembrete/);
+});
+
+test('reminder Confirmo that the repository cannot find falls back to the list', async () => {
+  const repos = reminderRepos({ confirmResult: { ok: false, reason: 'not_found' } });
+  const result = await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|confirm', 'button_reply'),
+  );
+  assert.equal(result.next.step, 'pick');
+});
+
+test('reminder Remarcar with 24 h or more enters the reschedule day step', async () => {
+  const repos = reminderRepos({ upcoming: [appointmentAt(26)] });
+  const result = await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|reschedule', 'button_reply'),
+  );
+  assert.equal(result.next.step, 'reschedule_day');
+  assert.deepEqual(result.next.context, { patient: PATIENT, appointmentId: 101 });
+});
+
+test('reminder Cancelar with 24 h or more asks for the cancel confirmation', async () => {
+  const repos = reminderRepos({ upcoming: [appointmentAt(26)] });
+  const result = await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|cancel', 'button_reply'),
+  );
+  assert.equal(result.next.step, 'confirm_cancel');
+  assert.equal(repos.calls.cancel.length, 0);
+});
+
+test('reminder Remarcar/Cancelar inside 24 h (4 h reminder) hands off as late_change', async () => {
+  for (const action of ['reschedule', 'cancel']) {
+    const repos = reminderRepos({ upcoming: [appointmentAt(4)] });
+    const result = await myAppointmentsFlow.handle(
+      makeCtx(repos, { config: REMINDER_CONFIG }),
+      replyInput(`my_appointments:reminder|${action}`, 'button_reply'),
+    );
+    assert.deepEqual(result.handoff, { reason: 'late_change' });
+    assert.deepEqual(result.events, [{ stepKey: `my_appointments:reminder_${action}` }]);
+  }
+});
+
+test('reminder button from an unknown wa_id asks for the CPF', async () => {
+  const repos = reminderRepos({ byWaId: null });
+  const result = await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG }),
+    replyInput('my_appointments:reminder|confirm', 'button_reply'),
+  );
+  assert.equal(result.next.step, 'ask_cpf');
+  assert.equal(repos.calls.confirm.length, 0);
+  assert.match(allText(result), /Não encontrei seu cadastro por este número/);
+});
+
+test('reminder button reuses the patient already identified in the conversation', async () => {
+  const repos = reminderRepos();
+  await myAppointmentsFlow.handle(
+    makeCtx(repos, { config: REMINDER_CONFIG, patient: PATIENT }),
+    replyInput('my_appointments:reminder|confirm', 'button_reply'),
+  );
+  assert.equal(repos.calls.waLookups.length, 0);
+  assert.equal(repos.calls.confirm.length, 1);
+});

@@ -36,7 +36,9 @@ function normalizeInboundResult(result) {
       // as the body and its id (e.g. a FAQ row) as replyId.
       body: readNonEmptyString(message.text) ?? readNonEmptyString(message.title),
       messageType: messageType.toLowerCase(),
-      replyId: readNonEmptyString(message.id),
+      // Template quick replies (type BUTTON) are documented with `payload`
+      // instead of `id`; not yet captured from the real account (T19).
+      replyId: readNonEmptyString(message.id) ?? readNonEmptyString(message.payload),
       status: 'received',
       createdAt: readTimestamp(result.receivedAt),
     },

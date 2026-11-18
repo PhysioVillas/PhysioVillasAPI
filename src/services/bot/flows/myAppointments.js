@@ -13,8 +13,18 @@
 // direto para o menu).
 //
 // Contexto gravado: patient {id, firstName}, appointmentId, date (YYYY-MM-DD).
+//
+// Botões do lembrete (T19): my_appointments:reminder|confirm|reschedule|cancel
+// (opcionalmente `:<appointmentId>`). Chegam sem estado; o paciente é
+// identificado pelo wa_id que recebeu o lembrete (`findPatientByWaId`), sem
+// CPF. A consulta é a do id, se vier, ou a próxima `Agendado` do paciente
+// que começa em até max(reminderHoursBefore) + 24 h. Confirmo grava
+// lembrete_confirmado = 'Sim' (ctx.repos.reminders.confirmAttendance);
+// Remarcar e Cancelar entram nas etapas normais (com a regra de 24 h). Sem
+// paciente pelo wa_id, cai no pedido de CPF.
 
 import { findCpfInText, isValidCpf } from '../cpf.js';
+import { parseReminderValue, REMINDER_STEP } from '../reminders.js';
 
 const FLOW = 'my_appointments';
 const DEFAULT_TIMEZONE = 'America/Bahia';
@@ -39,6 +49,10 @@ export const MY_APPOINTMENTS_TEXTS = Object.freeze({
   cancelled: 'Pronto, sua consulta foi cancelada. Quer marcar um novo horário?',
   rescheduled: (label) => `Pronto, sua consulta foi remarcada para ${label}.`,
   useOptions: 'Não entendi. Escolha uma das opções abaixo:',
+  reminderConfirmed: (name, label) => `${name ? `Obrigado, ${name}! ` : 'Obrigado! '}Sua presença em ${label} está confirmada.`,
+  reminderNoPatient: 'Não encontrei seu cadastro por este número.',
+  reminderNoAppointment: 'Não encontrei a consulta desse lembrete (talvez ela já tenha sido alterada).',
+  reminderConfirmFailed: 'Não consegui registrar a confirmação agora.',
 });
 
 const BACK_BUTTON = Object.freeze({ id: 'menu:main|show', title: 'Voltar ao menu' });
@@ -355,11 +369,80 @@ async function handleCpf(ctx, input) {
 // Fluxo
 // ---------------------------------------------------------------------------
 
+function reminderWindowHours(ctx) {
+  const hours = (Array.isArray(ctx.config.reminderHoursBefore) ? ctx.config.reminderHoursBefore : [24])
+    .map(Number)
+    .filter((value) => Number.isFinite(value) && value > 0);
+  return (hours.length ? Math.max(...hours) : 24) + 24;
+}
+
+async function reminderAppointment(ctx, patient, appointmentId) {
+  const upcoming = await ctx.repos.appointments.listUpcoming({ patientId: patient.id, now: ctx.now });
+  if (appointmentId !== null) {
+    return (upcoming ?? []).find((a) => String(a.id) === String(appointmentId)) ?? null;
+  }
+  const limit = ctx.now.getTime() + reminderWindowHours(ctx) * 3600000;
+  return [...(upcoming ?? [])]
+    .sort((a, b) => startsAtMs(a) - startsAtMs(b))
+    .find((a) => startsAtMs(a) <= limit) ?? null;
+}
+
+async function handleReminder(ctx, value) {
+  const parsed = parseReminderValue(value);
+  let patient = ctx.patient;
+  if (!patient) {
+    const found = await ctx.repos.patients.findPatientByWaId?.(ctx.waId);
+    patient = found ? { id: found.id, firstName: found.firstName } : null;
+  }
+  if (!patient) {
+    return askCpf([text(MY_APPOINTMENTS_TEXTS.reminderNoPatient)], 0);
+  }
+  if (!parsed) {
+    return listStep(ctx, patient, [text(MY_APPOINTMENTS_TEXTS.useOptions)]);
+  }
+  const appointment = await reminderAppointment(ctx, patient, parsed.appointmentId);
+  if (!appointment) {
+    return listStep(ctx, patient, [text(MY_APPOINTMENTS_TEXTS.reminderNoAppointment)]);
+  }
+
+  if (parsed.action === 'confirm') {
+    let outcome = { ok: false, reason: 'unavailable' };
+    if (typeof ctx.repos.reminders?.confirmAttendance === 'function') {
+      outcome = await ctx.repos.reminders.confirmAttendance({
+        patientId: patient.id,
+        appointmentId: appointment.id,
+        now: ctx.now,
+      });
+    }
+    if (outcome.ok) {
+      return finish([{
+        type: 'buttons',
+        body: MY_APPOINTMENTS_TEXTS.reminderConfirmed(patient.firstName, appointmentLabel(appointment)),
+        buttons: [BACK_BUTTON],
+      }], 'reminder_confirmed');
+    }
+    if (outcome.reason === 'not_found') {
+      return listStep(ctx, patient, [text(MY_APPOINTMENTS_TEXTS.reminderNoAppointment)]);
+    }
+    return actionStep(patient, appointment, [text(MY_APPOINTMENTS_TEXTS.reminderConfirmFailed)]);
+  }
+
+  if (isLate(ctx, appointment, parsed.action)) {
+    return lateHandoff(ctx, parsed.action, `reminder_${parsed.action}`);
+  }
+  return parsed.action === 'cancel'
+    ? confirmCancelStep(patient, appointment)
+    : dayStep(ctx, patient, appointment);
+}
+
 async function start(ctx) {
   return ctx.patient ? listStep(ctx, ctx.patient) : askCpf([], 0);
 }
 
 async function handle(ctx, input) {
+  if (input?.reply?.flow === FLOW && input.reply.step === REMINDER_STEP) {
+    return handleReminder(ctx, input.reply.value);
+  }
   if (!ctx.patient) {
     return ctx.state?.step === 'ask_cpf' ? handleCpf(ctx, input) : askCpf([], 0);
   }
