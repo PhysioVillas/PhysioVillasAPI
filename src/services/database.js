@@ -296,6 +296,7 @@ function createDatabase({ connectionString, pool } = {}) {
     status = 'accepted',
     createdAt = null,
     conversationIntent = null,
+    botStepKey = null,
   }) {
     if (!infobipMessageId) {
       throw new TypeError('infobipMessageId is required.');
@@ -346,7 +347,9 @@ function createDatabase({ connectionString, pool } = {}) {
         createdAt,
       });
       if (message !== null) {
-        await recordFlowEventsWith(client, { ...message, direction: 'out', sentVia: 'api', messageType }, conversation.id);
+        await recordFlowEventsWith(client, {
+          ...message, direction: 'out', sentVia: 'api', messageType, botStepKey,
+        }, conversation.id);
       }
       await client.query('commit');
 
@@ -722,6 +725,8 @@ function createDatabase({ connectionString, pool } = {}) {
     persistOutboundMessage,
     persistWebhookMessage,
     ping,
+    // Usado pelo bot (src/services/bot/index.js) para os repositórios dele.
+    pool: resolvedPool,
     recordAppointmentAttendance,
     recordDeliveryStatus,
     rescheduleConfirmedAppointment,

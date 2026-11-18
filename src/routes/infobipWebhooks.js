@@ -1,26 +1,21 @@
 import { Router } from 'express';
 import { hasExpectedBearerToken } from '../middleware/bearerToken.js';
 import { isAuthenticatedInfobipWebhook } from '../middleware/infobipWebhookAuth.js';
+import { maskCpfDeep, maskNormalizedMessage } from '../services/bot/index.js';
 import { normalizeInfobipWebhookPayload } from '../services/infobipWebhookNormalizer.js';
 
 const MAX_CAPTURED_PAYLOADS = 20;
 
-// The inbound message is already persisted: a bot failure is logged and the
-// webhook still succeeds, because a retry would not trigger the bot again.
-async function replyWithFaqBot(faqBot, message) {
+// The inbound message is already persisted: a bot failure is logged (no PII)
+// and the webhook still succeeds, because a retry would not trigger the bot
+// again.
+async function runBot(task, label) {
   try {
-    await faqBot.handleInbound({
-      waId: message.waId,
-      messageType: message.messageType,
-      replyId: message.replyId,
-      body: message.body,
-      ...(message.appointmentResult === undefined ? {} : { appointmentResult: message.appointmentResult }),
-    });
+    await task();
   } catch (error) {
-    console.error('FAQ bot reply failed.', {
+    console.error(label, {
       name: error?.name ?? 'Error',
       upstreamStatus: error?.status,
-      details: error?.details,
     });
   }
 }
@@ -30,11 +25,9 @@ function createInfobipWebhooksRouter({
   webhookToken,
   webhookHmacSecret,
   webhookHmacAlgorithm,
-  faqBot,
+  bot,
   captureUnmappedPayloads = false,
   allowUnauthenticatedInbound = false,
-  appointmentCommandBoundary,
-  appointmentService,
 } = {}) {
   const router = Router();
   const capturedPayloads = [];
@@ -56,8 +49,9 @@ function createInfobipWebhooksRouter({
     });
 
     // allowUnauthenticatedInbound (padrão false) só é ligado em src/bootstrap.js
-    // porque o sistema ainda é uma POC sem clientes reais. Mesmo assim,
-    // webhookAuthenticated continua false e a agenda não recebe permissão.
+    // porque o sistema ainda é uma POC sem clientes reais. Os fluxos do bot
+    // (inclusive a agenda em clinica_simulada) rodam sem autenticação até o
+    // fim da POC; o caminho antigo de agenda em `public` está desligado.
     if (!webhookAuthenticated && allowUnauthenticatedInbound) {
       // Só os NOMES dos headers (sem valores), para descobrir como a Infobip
       // assina o webhook quando o HMAC for configurado.
@@ -77,49 +71,26 @@ function createInfobipWebhooksRouter({
 
     try {
       const { inboundMessages, deliveryReports, ignored } = normalizeInfobipWebhookPayload(request.body);
-      const appointmentPrincipal = appointmentCommandBoundary?.createVerifiedWebhookPrincipal({ webhookAuthenticated });
-
+      // The old agenda path in `public` (appointmentService) is disabled
+      // since T17: scheduling now runs in the bot flows over
+      // clinica_simulada, which do not require an authenticated webhook
+      // (POC decision). The files stay in the repository.
       for (const normalized of inboundMessages) {
-        let appointmentResult;
-        const persisted = await database.persistWebhookMessage(normalized);
-        let appointmentMessage = persisted?.message ?? null;
+        // The CPF is masked before anything is stored; the bot gets the
+        // original text only in memory.
+        const persisted = await database.persistWebhookMessage(maskNormalizedMessage(normalized));
 
-        // Appointment effects may have failed after message persistence
-        // committed. On an authenticated retry, recover the stored row ID so
-        // the appointment transaction can safely retry using its idempotency
-        // key. The FAQ bot remains restricted to newly persisted messages.
-        if (
-          appointmentMessage === null &&
-          appointmentPrincipal !== null &&
-          appointmentPrincipal !== undefined &&
-          appointmentService !== undefined &&
-          typeof normalized.message.infobipMessageId === 'string' &&
-          normalized.message.infobipMessageId !== '' &&
-          typeof database.findPersistedMessageIdByInfobipId === 'function'
-        ) {
-          const messageId = await database.findPersistedMessageIdByInfobipId(normalized.message.infobipMessageId);
-          if (messageId !== null && messageId !== undefined) {
-            appointmentMessage = { id: messageId };
-          }
+        // Only a newly stored message triggers the bot: an Infobip retry of
+        // the same messageId hits `on conflict do nothing`, returns no row
+        // and never produces a second reply.
+        if (bot === undefined || !persisted?.message) {
+          continue;
         }
 
-        if (
-          appointmentPrincipal !== null &&
-          appointmentPrincipal !== undefined &&
-          appointmentService !== undefined &&
-          appointmentMessage !== null
-        ) {
-          appointmentResult = await appointmentService.handleVerifiedWebhookMessage({
-            principal: appointmentPrincipal,
-            message: normalized.message,
-            persistedMessage: appointmentMessage,
-          });
-        }
-
-        // Only a newly stored patient message triggers the bot, so an
-        // Infobip retry of the same messageId never sends a second reply.
-        if (faqBot !== undefined && normalized.message.direction === 'in' && persisted?.message) {
-          await replyWithFaqBot(faqBot, { ...normalized.message, appointmentResult });
+        if (normalized.message.direction === 'in') {
+          await runBot(() => bot.handleInbound(normalized.message), 'Bot reply failed.');
+        } else if (normalized.message.sentVia === 'business_app') {
+          await runBot(() => bot.handleTeamReply(normalized.message), 'Bot team reply tracking failed.');
         }
       }
 
@@ -130,7 +101,7 @@ function createInfobipWebhooksRouter({
       const accepted = inboundMessages.length + deliveryReports.length;
 
       if (captureUnmappedPayloads && ignored > 0) {
-        capturedPayloads.push({ capturedAt: new Date().toISOString(), payload: request.body });
+        capturedPayloads.push({ capturedAt: new Date().toISOString(), payload: maskCpfDeep(request.body) });
 
         if (capturedPayloads.length > MAX_CAPTURED_PAYLOADS) {
           capturedPayloads.shift();

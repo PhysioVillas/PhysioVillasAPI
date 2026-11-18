@@ -1,13 +1,14 @@
 import { getRuntimeConfig, requireInfobipConfig } from './config/runtimeConfig.js';
 import { createApp } from './appFactory.js';
 import { createDatabase } from './services/database.js';
-import { createFaqBot } from './services/faqBot.js';
+import { createBot } from './services/bot/index.js';
 import { createInfobipMessagesClient } from './services/infobipMessagesClient.js';
 
 function createRuntimeApp({
   env = process.env,
   createDatabaseFactory = createDatabase,
   createInfobipMessagesClientFactory = createInfobipMessagesClient,
+  createBotFactory = createBot,
 } = {}) {
   const config = getRuntimeConfig(env);
   const database = config.databaseUrl === undefined
@@ -21,14 +22,16 @@ function createRuntimeApp({
   const messagesClient = infobipMessagesConfig === undefined
     ? undefined
     : createInfobipMessagesClientFactory(infobipMessagesConfig);
-  // The FAQ bot answers every patient as soon as persistence and Infobip
-  // sending are configured (decided 2026-10-21 while the system has no real
-  // patients yet; there is no env switch or number allowlist).
-  const faqBot = database !== undefined && messagesClient !== undefined
-    ? createFaqBot({
-      client: messagesClient,
+  // The bot (engine + flows, T17) answers every patient as soon as
+  // persistence and Infobip sending are configured (POC with mock data; there
+  // is no env switch or number allowlist). It replaced the old FAQ bot
+  // (src/services/faqBot.js, kept but unused) and shares the database pool.
+  const bot = database !== undefined && messagesClient !== undefined
+    ? createBotFactory({
+      pool: database.pool,
       database,
-      sender: infobipMessagesConfig.whatsappSender,
+      messagesClient,
+      whatsappSender: infobipMessagesConfig.whatsappSender,
     })
     : undefined;
   const app = createApp({
@@ -39,7 +42,7 @@ function createRuntimeApp({
     messagesClient,
     whatsappSender: infobipMessagesConfig?.whatsappSender,
     appointmentConfirmationUtcOffset: config.appointmentConfirmationUtcOffset,
-    faqBot,
+    bot,
     chatManagerApiToken: config.chatManagerApiToken,
     captureUnmappedWebhookPayloads: database !== undefined && config.infobip.webhookToken !== undefined,
     // ⚠️ POC — WEBHOOK SEM AUTENTICAÇÃO (restaurado em 2026-11-18).
@@ -48,8 +51,12 @@ function createRuntimeApp({
     // ainda não foi configurada/validada na Vercel e na subscription da
     // Infobip, e sem isso todo webhook voltava 401 e o bot parou de responder.
     // Enquanto isso, o webhook aceita requisições não autenticadas. Requisições
-    // sem autenticação NÃO recebem permissão para a agenda (comandos de
-    // consulta continuam bloqueados); só o FAQ/menu e a persistência funcionam.
+    // sem autenticação chegam ao bot normalmente, inclusive aos fluxos de
+    // agenda sobre clinica_simulada (o caminho antigo em `public` está
+    // desligado desde o T17).
+    // Decisão de 2026-11-18: fica assim ATÉ O FIM DA POC (apresentação para
+    // investidores; ver "POC decisions" no CLAUDE.md e plan.md). Os fluxos de
+    // agenda do bot sobre clinica_simulada vão rodar sem autenticação.
     // REMOVER esta linha antes de qualquer uso com clientes reais.
     allowUnauthenticatedInbound: true,
   });
