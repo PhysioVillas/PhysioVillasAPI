@@ -165,6 +165,8 @@ test('invalid and not-found CPF get the same reply and increment attempts', asyn
     textInput('390.533.447-05'),
   );
   assert.deepEqual(invalid, notFound);
+  // Uma mensagem só (antes o texto de nova tentativa saía duplicado).
+  assert.deepEqual(invalid.replies, [{ type: 'text', text: MY_APPOINTMENTS_TEXTS.cpfRetry }]);
   assert.equal(invalid.next.step, 'ask_cpf');
   assert.equal(invalid.next.cpfAttempts, 1);
   assert.equal(invalid.handoff, undefined);

@@ -143,9 +143,12 @@ function toBooking(patient, stepKey) {
 // Etapas
 // ---------------------------------------------------------------------------
 
-function askCpf(prefix, attempts) {
+// `retry` = o CPF anterior não foi confirmado: manda só o pedido de nova
+// tentativa. Antes o texto de retry vinha no prefixo E era repetido aqui,
+// gerando duas mensagens iguais (visto no teste em production, 2026-11-18).
+function askCpf(prefix, attempts, { retry = false } = {}) {
   return stay({
-    replies: [...prefix, text(prefix.length ? MY_APPOINTMENTS_TEXTS.cpfRetry : MY_APPOINTMENTS_TEXTS.askCpf)],
+    replies: [...prefix, text(retry ? MY_APPOINTMENTS_TEXTS.cpfRetry : MY_APPOINTMENTS_TEXTS.askCpf)],
     step: 'ask_cpf',
     context: {},
     cpfAttempts: attempts,
@@ -353,7 +356,7 @@ async function handleCpf(ctx, input) {
     if (attempts >= Number(ctx.config.cpfMaxAttempts ?? 3)) {
       return handoffResult('ask_cpf', [text(MY_APPOINTMENTS_TEXTS.cpfGiveUp)], 'identity_failure');
     }
-    return askCpf([text(MY_APPOINTMENTS_TEXTS.cpfRetry)], attempts);
+    return askCpf([], attempts, { retry: true });
   }
   const patient = { id: found.id, firstName: found.firstName };
   try {
