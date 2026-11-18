@@ -179,7 +179,7 @@ test('faq: convênios', async () => {
   const result = await faqFlow.start(ctxOf({ state: { step: 'insurance' } }));
   assert.equal(assertAnswerShape(result, 'insurance'), [
     'Convênios aceitos: Convênio A e Convênio B.',
-    'Todos cobrem todos os nossos serviços.',
+    'Cobrem Fisioterapia ambulatorial, RPG e Fisioterapia pélvica. Pilates é por mensalidade e Massagem é só particular.',
     '',
     'Formas de pagamento:',
     'PIX e cartão.',

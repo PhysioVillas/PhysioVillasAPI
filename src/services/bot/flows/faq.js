@@ -122,7 +122,7 @@ async function insuranceAnswer(catalog) {
   const faq = entryMap(entries);
   const parts = [];
   if (plans.length) {
-    parts.push(`Convênios aceitos: ${listJoin(plans.map((plan) => plan.name))}.\nTodos cobrem todos os nossos serviços.`);
+    parts.push(`Convênios aceitos: ${listJoin(plans.map((plan) => plan.name))}.\nCobrem Fisioterapia ambulatorial, RPG e Fisioterapia pélvica. Pilates é por mensalidade e Massagem é só particular.`);
   } else {
     parts.push(NO_INFO);
   }
