@@ -2,6 +2,25 @@
 -- nem remover colunas (contrato com o Power BI). Dia sempre em America/Bahia.
 -- Sem identificadores de contato, texto ou payloads.
 
+-- Motor do bot (T17): bot_step_sent passa a aceitar step_key '<fluxo>:<passo>'
+-- alem das chaves faq_* legadas. Demais tipos de evento ficam como em 007.
+alter table public.whatsapp_flow_events
+  drop constraint if exists whatsapp_flow_events_check;
+alter table public.whatsapp_flow_events
+  add constraint whatsapp_flow_events_check check (
+    (event_type = 'message_received' and source = 'patient' and step_key is null) or
+    (event_type = 'flow_option_selected' and source = 'patient' and step_key in (
+      'menu_agendar', 'menu_paciente_novo', 'menu_atendente',
+      'faq_horarios', 'faq_convenios', 'faq_localizacao', 'faq_servicos',
+      'btn_voltar_menu', 'btn_atendente'
+    )) or
+    (event_type = 'bot_step_sent' and source = 'bot' and (
+      step_key in ('faq_menu', 'faq_answer', 'faq_handoff') or
+      step_key ~ '^[a-z_]+:[a-z0-9_|:-]+$'
+    )) or
+    (event_type = 'team_message_sent' and source = 'team' and step_key is null)
+  );
+
 -- Funil: quantas vezes cada passo '<fluxo>:<passo>' foi enviado pelo bot por dia.
 create or replace view reporting.bot_funnel_daily as
 select

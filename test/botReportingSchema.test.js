@@ -46,6 +46,20 @@ test('views are granted conditionally to powerbi_reader', async () => {
   }
 });
 
+test('flow events check keeps old keys, accepts flow:step keys and precedes the views', async () => {
+  const schema = await readFile(schemaPath, 'utf8');
+  assert.match(schema, /drop constraint if exists whatsapp_flow_events_check/i);
+  assert.match(schema, /add constraint whatsapp_flow_events_check check/i);
+  assert.match(schema, /'faq_menu', 'faq_answer', 'faq_handoff'/);
+  assert.match(schema, /step_key ~ '\^\[a-z_\]\+:\[a-z0-9_\|:-\]\+\$'/);
+  assert.match(schema, /event_type = 'flow_option_selected' and source = 'patient' and step_key in \(/);
+  assert.match(schema, /event_type = 'team_message_sent' and source = 'team' and step_key is null/);
+  assert.ok(
+    schema.indexOf('add constraint whatsapp_flow_events_check') <
+      schema.indexOf('create or replace view reporting.bot_funnel_daily'),
+  );
+});
+
 test('migration is append-only', async () => {
   const schema = await readFile(schemaPath, 'utf8');
   assert.doesNotMatch(schema, /\bdrop\s+(view|table|column|schema)\b/i);
