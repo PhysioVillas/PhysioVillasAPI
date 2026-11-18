@@ -165,7 +165,32 @@ O contrato completo está no cabeçalho de `src/services/bot/engine.js`. Resumo:
 - **Remarcar para o mesmo horário** (T10) conta a consulta original como ocupada; o fluxo não oferece o horário atual.
 - **`jornada_contatos.origem`** (T11): o CHECK só aceita `lead_planilha` e `paciente_sem_lead`; não existe `'chatbot'`.
 - **SQL de escrita do T10/T11 validado** em 2026-11-18 num branch temporário do Neon (já apagado): lead, contato, paciente novo, CPF duplicado, reservas, corrida na última vaga (6 ok + 1 `slot_unavailable`), remarcação, cancelamento, `not_found`, `too_late` e auditoria. Reserva no mesmo dia é permitida (o plano só exige 24 h para remarcar e cancelar).
-- **Pacientes de demonstração** passam a se chamar Ana, Bruno, Carla, Diego e Elisa Teste (migration 013), para a saudação usar o primeiro nome.
+- **Pacientes de demonstração** passam a se chamar (ver também 3.3.3 abaixo) Ana, Bruno, Carla, Diego e Elisa Teste (migration 013), para a saudação usar o primeiro nome.
+
+#### 3.3.3 Contratos comuns da W4 (fixados em 2026-11-18)
+
+- **`ctx.repos`** = `{ catalog, appointments, patients }`, criados por
+  `createCatalogRepository`, `createAppointmentRepository` e
+  `createPatientRepository` (o T17 monta). Fluxos não criam repositórios.
+- **Paciente identificado:** o fluxo que valida o CPF (T15) ou cadastra (T16)
+  grava `context.patient = { id, firstName }` no `next.context`. Não usar
+  `patientId` solto. O CPF nunca vai para `context`, respostas ou `events`.
+- **Pagamento** no `context`: `payment = { method, insuranceId }`, com
+  `method` ∈ `PAYMENT_METHODS` de `appointmentRepository.js`
+  (`'Convênio'`, `'Mensalidade'`, `'Pacote particular'`, `'Particular avulso'`)
+  e `insuranceId` só para `'Convênio'`. Opções por serviço (3.3.2): Pilates →
+  só `Mensalidade`; Massagem → só `Particular avulso`; os demais →
+  `Convênio`, `Particular avulso`, `Pacote particular`.
+- **Triagem → agendamento:** `next: { flow: 'booking', step: 'choose_day',
+  context: { serviceId, payment, patient, newPatient: true } }`.
+- **Menu (6.2 do `plan.md`)** — ids das linhas (T13 dono):
+  `menu:main|booking`, `menu:main|my_appointments`, `menu:main|services`,
+  `menu:main|insurance`, `menu:main|hours_address`, `menu:main|first_visit`,
+  `menu:main|human`. O menu troca de fluxo devolvendo `next` com o fluxo de
+  destino (o engine chama `start`). `menu:main|human` devolve
+  `handoff: { reason: 'patient_request' }`.
+- **Botões comuns** nas respostas do FAQ: `faq:answer|book` (Agendar),
+  `menu:main|show` (Voltar ao menu), `menu:main|human` (Falar com a equipe).
 
 ### 3.4 Etapas de lead (`f_leads.etapa_final`)
 
