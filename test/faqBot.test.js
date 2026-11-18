@@ -339,13 +339,16 @@ test('the webhook triggers the bot once per newly stored patient message', async
       },
     },
     infobipWebhookToken: 'receiver-token',
-    faqBot: { handleInbound: async (message) => handled.push(message) },
+    bot: { handleInbound: async (message) => handled.push(message), handleTeamReply: async () => {} },
   });
 
   assert.equal((await postInbound(app, textPayload('in-1'))).status, 200);
   assert.equal((await postInbound(app, textPayload('in-1'))).status, 200);
 
-  assert.deepEqual(handled, [{ waId: PATIENT, messageType: 'text', replyId: null, body: 'Oi' }]);
+  assert.equal(handled.length, 1);
+  assert.equal(handled[0].waId, PATIENT);
+  assert.equal(handled[0].messageType, 'text');
+  assert.equal(handled[0].body, 'Oi');
 });
 
 test('a bot failure does not fail the webhook that already stored the message', async (t) => {
@@ -353,10 +356,11 @@ test('a bot failure does not fail the webhook that already stored the message', 
   const app = createApp({
     database: { persistWebhookMessage: async () => ({ message: { id: 'stored' } }) },
     infobipWebhookToken: 'receiver-token',
-    faqBot: {
+    bot: {
       handleInbound: async () => {
         throw new Error('Infobip down');
       },
+      handleTeamReply: async () => {},
     },
   });
 
@@ -367,12 +371,16 @@ test('a bot failure does not fail the webhook that already stored the message', 
   assert.equal(console.error.mock.callCount(), 1);
 });
 
-test('coexistence echoes from the Business App never trigger the bot', async () => {
+test('coexistence echoes from the Business App never trigger a bot reply', async () => {
   const handled = [];
+  const teamReplies = [];
   const app = createApp({
     database: { persistWebhookMessage: async () => ({ message: { id: 'stored' } }) },
     infobipWebhookToken: 'receiver-token',
-    faqBot: { handleInbound: async (message) => handled.push(message) },
+    bot: {
+      handleInbound: async (message) => handled.push(message),
+      handleTeamReply: async (message) => teamReplies.push(message.waId),
+    },
   });
 
   await postInbound(app, {
@@ -394,4 +402,5 @@ test('coexistence echoes from the Business App never trigger the bot', async () 
   });
 
   assert.equal(handled.length, 0);
+  assert.deepEqual(teamReplies, [PATIENT]);
 });

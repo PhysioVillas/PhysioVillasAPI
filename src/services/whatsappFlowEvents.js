@@ -14,6 +14,25 @@ const selectableFlowSteps = new Set([
   BUTTON_TALK_TO_TEAM,
 ]);
 
+// Etapas do bot novo (engine, T17): `<flow>:<step>` e `handoff:<reason>`.
+// REQUER a migration 014 (T18), que amplia `whatsapp_flow_events_check` para
+// aceitar `bot_step_sent` com step_key neste formato; sem ela o insert falha
+// e derruba a gravação da resposta.
+const BOT_STEP_KEY = /^[a-z_]+:[a-z0-9_|:-]+$/;
+
+// Devolve o step_key aceito pelo banco, ou null. Se só a parte de valor
+// (depois do primeiro `|`) tiver caracteres fora do formato, ela é removida.
+function toBotStepKey(stepKey) {
+  if (typeof stepKey !== 'string') {
+    return null;
+  }
+  if (BOT_STEP_KEY.test(stepKey)) {
+    return stepKey;
+  }
+  const [head] = stepKey.split('|');
+  return BOT_STEP_KEY.test(head) ? head : null;
+}
+
 function flowEventForMessage(message) {
   if (message.direction === 'in') {
     const events = [{
@@ -55,7 +74,7 @@ function flowEventForMessage(message) {
   ) {
     return [{
       eventType: 'bot_step_sent',
-      stepKey: message.messageType,
+      stepKey: toBotStepKey(message.botStepKey) ?? message.messageType,
       source: 'bot',
       occurredAt: message.createdAt ?? null,
     }];
@@ -64,4 +83,4 @@ function flowEventForMessage(message) {
   return [];
 }
 
-export { flowEventForMessage };
+export { flowEventForMessage, toBotStepKey };
