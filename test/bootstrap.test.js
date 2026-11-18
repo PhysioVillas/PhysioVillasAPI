@@ -42,7 +42,9 @@ test('runtime remains safely disconnected when no database or Infobip configurat
   assert.equal(clientCreated, false);
 });
 
-test('runtime rejects unauthenticated inbound webhooks even when the legacy bearer token exists', async () => {
+// POC: o runtime aceita webhooks sem autenticação de propósito (ver o
+// comentário em src/bootstrap.js). Remover este teste junto com o bypass.
+test('POC runtime accepts unauthenticated inbound webhooks while HMAC is not configured', async () => {
   const calls = [];
   const { app } = createRuntimeApp({
     env: {
@@ -61,7 +63,7 @@ test('runtime rejects unauthenticated inbound webhooks even when the legacy bear
       body: JSON.stringify({ entry: [] }),
     });
 
-    assert.equal(response.status, 401);
+    assert.equal(response.status, 202);
     assert.equal(calls.length, 0);
   } finally {
     await new Promise((resolve) => server.close(resolve));

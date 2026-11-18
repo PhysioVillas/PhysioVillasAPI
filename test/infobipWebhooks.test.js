@@ -491,7 +491,7 @@ test('inbound webhook reports malformed JSON without exposing parser details', a
   });
 });
 
-test('inbound webhook never accepts the removed unauthenticated bypass', async () => {
+test('inbound webhook rejects unauthenticated requests unless the POC bypass is enabled', async () => {
   const calls = [];
   const app = createApp({
     database: { persistWebhookMessage: async (message) => calls.push(message) },
@@ -509,6 +509,44 @@ test('inbound webhook never accepts the removed unauthenticated bypass', async (
   });
 
   assert.equal(calls.length, 0);
+});
+
+test('POC bypass accepts an unauthenticated message and answers it without granting appointment permissions', async () => {
+  const persisted = [];
+  const botCalls = [];
+  const app = createApp({
+    database: {
+      persistWebhookMessage: async (normalized) => {
+        persisted.push(normalized);
+        return { message: { id: 1 } };
+      },
+    },
+    infobipWebhookToken: 'receiver-token',
+    whatsappSender: '5571900000000',
+    appointmentConfirmationUtcOffset: '-03:00',
+    faqBot: { handleInbound: async (message) => botCalls.push(message) },
+    allowUnauthenticatedInbound: true,
+  });
+  const originalWarn = console.warn;
+  console.warn = () => {};
+
+  try {
+    await withServer(app, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(inboundPayload()),
+      });
+
+      assert.equal(response.status, 200);
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.equal(persisted.length, 1);
+  assert.equal(botCalls.length, 1);
+  assert.equal(botCalls[0].appointmentResult, undefined);
 });
 
 test('inbound webhook authenticates Infobip HMAC against the exact raw request body', async () => {

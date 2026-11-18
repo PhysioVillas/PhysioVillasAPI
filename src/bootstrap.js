@@ -42,6 +42,16 @@ function createRuntimeApp({
     faqBot,
     chatManagerApiToken: config.chatManagerApiToken,
     captureUnmappedWebhookPayloads: database !== undefined && config.infobip.webhookToken !== undefined,
+    // ⚠️ POC — WEBHOOK SEM AUTENTICAÇÃO (restaurado em 2026-11-18).
+    // Este sistema ainda é uma prova de conceito em teste: nenhum cliente ou
+    // paciente real usa este número. A validação HMAC (infobipWebhookAuth.js)
+    // ainda não foi configurada/validada na Vercel e na subscription da
+    // Infobip, e sem isso todo webhook voltava 401 e o bot parou de responder.
+    // Enquanto isso, o webhook aceita requisições não autenticadas. Requisições
+    // sem autenticação NÃO recebem permissão para a agenda (comandos de
+    // consulta continuam bloqueados); só o FAQ/menu e a persistência funcionam.
+    // REMOVER esta linha antes de qualquer uso com clientes reais.
+    allowUnauthenticatedInbound: true,
   });
 
   return { app, config };

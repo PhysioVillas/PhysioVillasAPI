@@ -19,6 +19,7 @@ function createApp({
   faqBot,
   chatManagerApiToken,
   captureUnmappedWebhookPayloads = false,
+  allowUnauthenticatedInbound = false,
 } = {}) {
   const app = express();
   const appointmentCommandBoundary = createAppointmentCommandBoundary({
@@ -47,6 +48,7 @@ function createApp({
     webhookHmacAlgorithm: infobipWebhookHmacAlgorithm,
     faqBot,
     captureUnmappedPayloads: captureUnmappedWebhookPayloads,
+    allowUnauthenticatedInbound,
     appointmentCommandBoundary,
     appointmentService,
   }));
