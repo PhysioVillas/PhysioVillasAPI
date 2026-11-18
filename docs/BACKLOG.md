@@ -446,7 +446,9 @@ coexistência em produção", diferente do `SET-05` de "teste de templates" em
       real oferece só Básico/Hmac/OAuth e o backend espera Bearer. Decisão de
       2026-09-25: operar temporariamente sem autenticação
       (`allowUnauthenticatedInbound: true` em produção) e resolver na próxima
-      sprint
+      sprint. **Atualização 2026-11-18:** decidido manter sem autenticação
+      até o fim da POC (apresentação para investidores, dados mock); ver
+      `docs/IMPLEMENTATION_STATUS.md`
 - [ ] Confirmado que o app do celular continua funcionando normalmente após o
       onboarding (throughput de 20 msg/s é o limite documentado)
 - [ ] Equipe da clínica orientada sobre o funcionamento

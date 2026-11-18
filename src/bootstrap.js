@@ -50,6 +50,9 @@ function createRuntimeApp({
     // Enquanto isso, o webhook aceita requisições não autenticadas. Requisições
     // sem autenticação NÃO recebem permissão para a agenda (comandos de
     // consulta continuam bloqueados); só o FAQ/menu e a persistência funcionam.
+    // Decisão de 2026-11-18: fica assim ATÉ O FIM DA POC (apresentação para
+    // investidores; ver "POC decisions" no CLAUDE.md e plan.md). Os fluxos de
+    // agenda do bot sobre clinica_simulada vão rodar sem autenticação.
     // REMOVER esta linha antes de qualquer uso com clientes reais.
     allowUnauthenticatedInbound: true,
   });

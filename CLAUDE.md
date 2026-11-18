@@ -36,6 +36,27 @@ Before writing further integration code, read:
 - `docs/INFOBIP_AUTOMATIONS.md` — templates, triage, FAQ and reminder
   configuration prepared for the Infobip platform.
 
+## POC decisions (2026-11-18) — read before changing the bot
+
+The system is a **POC for an investor presentation**, with no real patients.
+These decisions hold **until the end of the POC**; don't "fix" them without
+the user asking:
+
+- **The inbound webhook runs without authentication.**
+  `allowUnauthenticatedInbound: true` stays in `src/bootstrap.js`. The bot's
+  patient scheduling flows (book, reschedule, cancel) will also run without
+  an authenticated webhook. Accepted risk: anyone who knows the URL can forge
+  messages and change appointments, which is acceptable only because the data
+  is mock. Before any use with real patients, HMAC
+  (`src/middleware/infobipWebhookAuth.js`) becomes mandatory again.
+- **The bot is self-sufficient on the mock data in `clinica_simulada`.** It
+  reads and writes there (appointments, patients, leads) and confirms
+  bookings without human validation.
+- **Message retention is unlimited.** Nothing is purged, so the Power BI
+  history stays intact for the presentation.
+- The full plan (CPF identification, 24 h rule, support hours 08:00–18:00,
+  `bot_config` table, handoff reasons) is in `plan.md`.
+
 ## Architecture
 
 **Backend-only, no frontend, no end-user login, no bot logic in code.** The project is
@@ -57,8 +78,9 @@ only). No Socket.io, no real-time layer — there is no UI to push updates to.
 Routes:
 - `GET /health` — health check.
 - `GET /docs` and `GET /docs.json` — Swagger UI and OpenAPI specification.
-- `POST /webhooks/infobip/inbound` — receives the documented inbound envelope;
-  it remains disabled until database and webhook Bearer token are configured.
+- `POST /webhooks/infobip/inbound` — receives the documented inbound envelope.
+  It needs the database configured and, during the POC, accepts requests
+  without authentication (see "POC decisions").
 - `POST /messages/validate` — protected, validation-only endpoint for text and
   optional `sendAt`; there is no send route or real send implementation.
 

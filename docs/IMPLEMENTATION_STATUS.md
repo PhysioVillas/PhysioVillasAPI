@@ -2,6 +2,23 @@
 
 **Data do registro:** 2026-09-20
 
+## Decisão — 2026-11-18: POC para investidores
+
+O sistema é uma POC para a apresentação aos investidores do projeto, sem
+pacientes reais. Valem até o fim da POC:
+
+- **Webhook sem autenticação.** `allowUnauthenticatedInbound` continua ligado
+  em `src/bootstrap.js`. Os fluxos de agenda do bot também vão rodar sem
+  webhook autenticado. Risco aceito: quem conhecer a URL pode forjar
+  mensagens e alterar agendamentos. Isso só é aceitável porque os dados são
+  mock. O HMAC volta a ser obrigatório antes de qualquer uso real.
+- **Bot autossuficiente sobre `clinica_simulada`.** Lê e grava agenda,
+  pacientes e leads nos dados mock e confirma marcações sem a equipe.
+- **Retenção de mensagens infinita.** Nada é apagado, o que preserva o
+  histórico do Power BI.
+
+O plano detalhado está em `plan.md`. Nada dele está implementado nesta data.
+
 ## Estado atual — 2026-11-17 (agenda e BI)
 
 Esta seção substitui afirmações antigas abaixo quando houver conflito. O
