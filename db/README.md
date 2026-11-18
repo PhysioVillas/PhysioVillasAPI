@@ -14,12 +14,11 @@ na inicialização da API ou no deploy.
 
 ## Estado de produção e reconciliação do ledger
 
-O inventário anterior do Neon encontrou o schema operacional e as views das
-migrations `001`–`008`, mas não encontrou `schema_migrations`; também não
-encontrou as tabelas da agenda. Confirme novamente esse estado por leitura antes
-de escrever, pois o estado remoto pode ter mudado. A migration `009` foi
-executada em PostgreSQL descartável junto com `001`–`008`; isso valida o SQL,
-mas não significa que foi aplicada no Neon.
+O Neon de produção já tem as migrations `001`–`009` registradas. Antes da
+aplicação, as colunas, os índices, as restrições e as views antigas foram
+comparadas com as de um PostgreSQL descartável. A reconciliação e a migration
+`009` foram aplicadas na mesma transação. O procedimento abaixo serve para um
+banco legado equivalente que ainda não possua o histórico.
 
 Não execute `npm run migrate` enquanto o ledger de produção estiver ausente: o
 runner criaria um ledger vazio e tentaria reaplicar DDL antigo. Depois de
@@ -111,7 +110,8 @@ Fisioterapia permite até seis pacientes simultâneos por faixa de 30 minutos,
 inclusive com o mesmo fisioterapeuta. A migration 009 implementa essa regra no
 banco e as views agregadas para o BI. O catálogo correspondente também existe
 em `src/config/appointmentSchedule.js`. Tudo isso está pronto no código local,
-mas só vale para produção depois da reconciliação e aplicação da migration.
+e depende da publicação da API e da autenticação do webhook para receber
+eventos em produção.
 Histórico de eventos é append-only e as views de reporting expõem somente
 contagens agregadas. Comparecimento só é contado quando registrado pela equipe.
 

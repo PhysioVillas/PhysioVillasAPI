@@ -81,7 +81,21 @@ table _Medidas
 		formatString: #,0
 		lineageTag: b8246863-03d5-4da6-8307-772ac35995c5
 
-	measure 'Vagas livres' = COALESCE ( CALCULATE ( COUNTROWS ( AppointmentSlotCapacityMetrics ), AppointmentSlotCapacityMetrics[remaining_capacity] > 0 ), 0 )
+	measure 'Horários com vaga nos próximos 30 dias' =
+			VAR AgoraBahia = UTCNOW () - TIME ( 3, 0, 0 )
+			RETURN
+			    COALESCE (
+			        COUNTROWS (
+			            FILTER (
+			                AppointmentSlotCapacityMetrics,
+			                AppointmentSlotCapacityMetrics[remaining_capacity] > 0
+			                    && AppointmentSlotCapacityMetrics[slot_date]
+			                        + TIMEVALUE ( AppointmentSlotCapacityMetrics[slot_time] ) > AgoraBahia
+			                    && AppointmentSlotCapacityMetrics[slot_date] <= INT ( AgoraBahia ) + 30
+			            )
+			        ),
+			        0
+			    )
 		formatString: #,0
 		lineageTag: 0d0442e4-5cdf-48d7-99c9-e68bb2f3ba68
 

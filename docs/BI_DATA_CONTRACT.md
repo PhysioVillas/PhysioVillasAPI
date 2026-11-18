@@ -47,10 +47,10 @@ pois a mesma conversa pode participar de várias etapas.
 funil não é, por si só, um pedido válido de consulta. O pedido estruturado
 identifica serviço, profissional e horário, é comparado com a view de vagas e
 fica pendente até a confirmação da equipe pelo WhatsApp Business. A migration
-009, API e modelo semântico locais agora incluem solicitações, consultas,
-eventos de ciclo de vida e métricas da agenda. O SQL foi aplicado em um banco
-PostgreSQL descartável, mas a produção Neon ainda requer reconciliação do
-ledger e aplicação da migration.
+009 cria as views de solicitações, consultas, eventos e horários. A migration
+foi aplicada no Neon após a reconciliação do histórico. O Power BI Desktop
+carregou as views. As consultas passarão a aparecer após o fluxo da API ser
+validado e começar a registrar pedidos e confirmações.
 
 **Regras operacionais definidas pela clínica:** de segunda a sexta, Pilates
 com Luarca tem horários de 60 minutos (07:00–12:00 e 14:00–17:00); RPG com

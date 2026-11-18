@@ -96,3 +96,20 @@ COALESCE ( CALCULATE ( [Consultas confirmadas], ScheduledAppointmentMetrics[atte
 
 Cancelamentos registrados =
 COALESCE ( CALCULATE ( SUM ( DailyAppointmentEventMetrics[event_count] ), DailyAppointmentEventMetrics[event_type] = "cancelled" ), 0 )
+
+-- Tabela: AppointmentSlotCapacityMetrics
+Horários com vaga nos próximos 30 dias =
+VAR AgoraBahia = UTCNOW () - TIME ( 3, 0, 0 )
+RETURN
+    COALESCE (
+        COUNTROWS (
+            FILTER (
+                AppointmentSlotCapacityMetrics,
+                AppointmentSlotCapacityMetrics[remaining_capacity] > 0
+                    && AppointmentSlotCapacityMetrics[slot_date]
+                        + TIMEVALUE ( AppointmentSlotCapacityMetrics[slot_time] ) > AgoraBahia
+                    && AppointmentSlotCapacityMetrics[slot_date] <= INT ( AgoraBahia ) + 30
+            )
+        ),
+        0
+    )

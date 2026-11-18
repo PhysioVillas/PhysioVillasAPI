@@ -77,15 +77,15 @@ intervalos com timestamps ambíguos. O bot não conta como resposta humana.
 A migration 008 inclui índice parcial por conversa e instante para apoiar os
 pareamentos sem expor identificadores na view.
 
-## Agenda (migration 009; código local validado, produção pendente)
+## Agenda (migration 009)
 
 `009_appointments.sql` cria `appointment_requests` para pedidos recebidos,
 `appointments` para o estado atual de cada consulta e `appointment_events`
 para o histórico append-only de pedido, confirmação, cancelamento, remarcação e
 comparecimento. Quatro views analíticas agregam pedidos, estado atual, eventos
 e capacidade em hora local `America/Bahia`, sem expor contatos ou conteúdo de
-mensagens. A migration aplica em PostgreSQL descartável; ainda precisa ser
-reconciliada e aplicada no Neon de produção.
+mensagens. A migration foi validada em PostgreSQL descartável e aplicada no
+Neon após a reconciliação de 001–008.
 
 A clínica definiu que duas consultas não podem se sobrepor quando são do mesmo
 profissional, mas podem ocorrer no mesmo horário se forem com profissionais
