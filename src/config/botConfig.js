@@ -95,9 +95,12 @@ export function createBotConfig({
       loading = load().then(({ config, ok }) => {
         if (ok) {
           cache = { config, loadedAt: now() };
+          return config;
         }
 
-        return config;
+        // Falha depois de um carregamento bom: mantém a última config válida
+        // (stale) em vez de voltar aos defaults; tenta de novo na próxima chamada.
+        return cache !== null ? cache.config : config;
       }).finally(() => {
         loading = null;
       });

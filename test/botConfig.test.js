@@ -182,6 +182,28 @@ test('a failed query returns defaults, logs a warning and is retried on the next
   assert.equal(second.cpfMaxAttempts, 5);
 });
 
+test('a failed reload after the TTL keeps the last good config', async () => {
+  let fail = false;
+  const pool = {
+    query: async () => {
+      if (fail) {
+        throw new Error('timeout');
+      }
+      return { rows: [{ key: 'cpf_max_attempts', value: 5 }] };
+    },
+  };
+  const clock = createClock();
+  const logger = createLogger();
+  const botConfig = createBotConfig({ pool, logger, ttlMs: 1000, now: clock.now });
+
+  assert.equal((await botConfig.get()).cpfMaxAttempts, 5);
+  fail = true;
+  clock.advance(1001);
+  const stale = await botConfig.get();
+  assert.equal(stale.cpfMaxAttempts, 5);
+  assert.equal(logger.warnings.length, 1);
+});
+
 test('returned config is frozen so callers cannot change the cache', async () => {
   const botConfig = createBotConfig({ pool: createPool(SEED_ROWS) });
   const config = await botConfig.get();
