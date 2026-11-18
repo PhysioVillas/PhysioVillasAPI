@@ -266,78 +266,51 @@ test('inbound webhook normalizes a documented WhatsApp inbound event and persist
   }]);
 });
 
-test('authenticated retries resume an appointment request by stored message id and remain idempotent', async (t) => {
-  t.mock.method(console, 'error', () => {});
+test('the old public agenda path is disabled and retries never reach the bot twice', async () => {
   const providerMessageId = 'infobip-appointment-request-1';
-  const internalMessageId = 'stored-appointment-message-1';
   const payload = inboundPayload({
     messageId: providerMessageId,
     message: { type: 'TEXT', text: 'AGENDAR | FISIOTERAPIA | MOISES | 2026-12-01 | 07:30' },
   });
-  const persistedSourceIds = [];
-  const lookupIds = [];
-  const appointmentRequestSources = new Set();
-  let persistAttempts = 0;
-  let appointmentAttempts = 0;
-  let appointmentMutations = 0;
-  let faqReplies = 0;
+  const stored = new Set();
+  const appointmentCalls = [];
+  const botCalls = [];
   const database = {
-    persistWebhookMessage: async () => {
-      persistAttempts += 1;
-      return persistAttempts === 1 ? { message: { id: internalMessageId } } : { message: null };
+    persistWebhookMessage: async ({ message }) => {
+      const isNew = !stored.has(message.infobipMessageId);
+      stored.add(message.infobipMessageId);
+      return { message: isNew ? { id: 'stored-1' } : null };
     },
-    findPersistedMessageIdByInfobipId: async (id) => {
-      lookupIds.push(id);
-      return id === providerMessageId ? internalMessageId : null;
-    },
-    listAvailableAppointmentSlots: async () => [
-      { time: '07:30', startsAt: '2026-12-01T10:30:00.000Z', endsAt: '2026-12-01T11:00:00.000Z' },
-    ],
-    createAppointmentRequest: async ({ sourceMessageId }) => {
-      appointmentAttempts += 1;
-      persistedSourceIds.push(sourceMessageId);
-      if (appointmentAttempts === 1) throw new Error('temporary appointment transaction failure');
-      if (appointmentRequestSources.has(sourceMessageId)) return null;
-      appointmentRequestSources.add(sourceMessageId);
-      appointmentMutations += 1;
-      return { id: 'appointment-request-1' };
-    },
+    findPersistedMessageIdByInfobipId: async () => { appointmentCalls.push('lookup'); return 'stored-1'; },
+    listAvailableAppointmentSlots: async () => { appointmentCalls.push('slots'); return []; },
+    createAppointmentRequest: async () => { appointmentCalls.push('request'); return null; },
   };
   const app = createApp({
     database,
     infobipWebhookToken: 'receiver-token',
     whatsappSender: 'clinic-sender',
     appointmentConfirmationUtcOffset: '-03:00',
-    faqBot: { handleInbound: async () => { faqReplies += 1; } },
+    bot: { handleInbound: async (message) => botCalls.push(message), handleTeamReply: async () => {} },
   });
 
   await withServer(app, async (baseUrl) => {
-    const sendRetry = () => fetch(`${baseUrl}/webhooks/infobip/inbound`, {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer receiver-token',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const failedAttempt = await sendRetry();
-    assert.equal(failedAttempt.status, 500);
-
-    const recoveredAttempt = await sendRetry();
-    assert.equal(recoveredAttempt.status, 200);
-    assert.deepEqual(await recoveredAttempt.json(), { accepted: 1, ignored: 0 });
-
-    const duplicateAfterSuccess = await sendRetry();
-    assert.equal(duplicateAfterSuccess.status, 200);
-    assert.deepEqual(await duplicateAfterSuccess.json(), { accepted: 1, ignored: 0 });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await fetch(`${baseUrl}/webhooks/infobip/inbound`, {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer receiver-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { accepted: 1, ignored: 0 });
+    }
   });
 
-  assert.equal(persistAttempts, 3);
-  assert.deepEqual(lookupIds, [providerMessageId, providerMessageId]);
-  assert.deepEqual(persistedSourceIds, [internalMessageId, internalMessageId, internalMessageId]);
-  assert.equal(appointmentMutations, 1);
-  assert.equal(faqReplies, 0);
+  assert.deepEqual(appointmentCalls, []);
+  assert.equal(botCalls.length, 1);
+  assert.equal(botCalls[0].infobipMessageId, providerMessageId);
 });
 
 test('inbound webhook acknowledges unsupported events without storing their raw payload', async () => {
@@ -511,7 +484,7 @@ test('inbound webhook rejects unauthenticated requests unless the POC bypass is 
   assert.equal(calls.length, 0);
 });
 
-test('POC bypass accepts an unauthenticated message and answers it without granting appointment permissions', async () => {
+test('POC bypass accepts an unauthenticated message and the bot answers it', async () => {
   const persisted = [];
   const botCalls = [];
   const app = createApp({
@@ -524,7 +497,7 @@ test('POC bypass accepts an unauthenticated message and answers it without grant
     infobipWebhookToken: 'receiver-token',
     whatsappSender: '5571900000000',
     appointmentConfirmationUtcOffset: '-03:00',
-    faqBot: { handleInbound: async (message) => botCalls.push(message) },
+    bot: { handleInbound: async (message) => botCalls.push(message), handleTeamReply: async () => {} },
     allowUnauthenticatedInbound: true,
   });
   const originalWarn = console.warn;
@@ -546,7 +519,7 @@ test('POC bypass accepts an unauthenticated message and answers it without grant
 
   assert.equal(persisted.length, 1);
   assert.equal(botCalls.length, 1);
-  assert.equal(botCalls[0].appointmentResult, undefined);
+  assert.equal(botCalls[0].body, 'Preciso remarcar a consulta.');
 });
 
 test('inbound webhook authenticates Infobip HMAC against the exact raw request body', async () => {

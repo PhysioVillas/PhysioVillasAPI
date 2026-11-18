@@ -70,8 +70,9 @@ test('POC runtime accepts unauthenticated inbound webhooks while HMAC is not con
   }
 });
 
-test('runtime wires the FAQ bot behind an authenticated Infobip webhook', async () => {
-  const sends = [];
+test('runtime wires the bot engine behind an authenticated Infobip webhook', async () => {
+  const botOptions = [];
+  const handled = [];
   const webhookSecret = 'test-webhook-signature-secret';
   const databaseOnly = {
     DATABASE_URL: 'postgres://neon.example/chatmanager',
@@ -84,18 +85,21 @@ test('runtime wires the FAQ bot behind an authenticated Infobip webhook', async 
     INFOBIP_API_KEY: 'secret',
     INFOBIP_WHATSAPP_SENDER: 'clinic-sender',
   };
+  const pool = { query: async () => ({ rows: [] }) };
+  const messagesClient = { sendWhatsAppInteractiveList: async () => ({ messageId: 'bot-1' }) };
   const factories = {
     createDatabaseFactory: () => ({
+      pool,
       persistWebhookMessage: async () => ({ message: { id: 'stored' } }),
-      getFaqBotContext: async () => ({ lastBotMessageType: null, teamRepliedRecently: false }),
-      persistOutboundMessage: async () => ({ message: { id: 'stored' } }),
     }),
-    createInfobipMessagesClientFactory: () => ({
-      sendWhatsAppInteractiveList: async (message) => {
-        sends.push(message);
-        return { messageId: `bot-${sends.length}` };
-      },
-    }),
+    createInfobipMessagesClientFactory: () => messagesClient,
+    createBotFactory: (options) => {
+      botOptions.push(options);
+      return {
+        handleInbound: async (message) => handled.push(message),
+        handleTeamReply: async () => {},
+      };
+    },
   };
   const payload = {
     results: [{
@@ -129,7 +133,10 @@ test('runtime wires the FAQ bot behind an authenticated Infobip webhook', async 
     }
   }
 
-  assert.equal(sends.length, 1);
-  assert.equal(sends[0].sender, 'clinic-sender');
-  assert.equal(sends[0].to, '5571999990000');
+  assert.equal(botOptions.length, 1);
+  assert.equal(botOptions[0].pool, pool);
+  assert.equal(botOptions[0].messagesClient, messagesClient);
+  assert.equal(botOptions[0].whatsappSender, 'clinic-sender');
+  assert.equal(handled.length, 1);
+  assert.equal(handled[0].waId, '5571999990000');
 });

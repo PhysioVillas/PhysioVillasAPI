@@ -5,8 +5,6 @@ import { renderDocsHtml } from './routes/docsPage.js';
 import { createHealthRouter } from './routes/health.js';
 import { createInfobipWebhooksRouter } from './routes/infobipWebhooks.js';
 import { createMessagesRouter } from './routes/messages.js';
-import { createAppointmentCommandBoundary } from './services/appointmentCommandBoundary.js';
-import { createAppointmentService } from './services/appointmentService.js';
 
 function createApp({
   database,
@@ -15,20 +13,15 @@ function createApp({
   infobipWebhookHmacAlgorithm,
   messagesClient,
   whatsappSender,
-  appointmentConfirmationUtcOffset,
-  faqBot,
+  // Kept for compatibility: the old agenda path in `public` that used it is
+  // disabled since T17 (appointmentService.js stays, unused).
+  appointmentConfirmationUtcOffset: _appointmentConfirmationUtcOffset,
+  bot,
   chatManagerApiToken,
   captureUnmappedWebhookPayloads = false,
   allowUnauthenticatedInbound = false,
 } = {}) {
   const app = express();
-  const appointmentCommandBoundary = createAppointmentCommandBoundary({
-    clinicWhatsappSender: whatsappSender,
-    confirmationUtcOffset: appointmentConfirmationUtcOffset,
-  });
-  const appointmentService = database === undefined
-    ? undefined
-    : createAppointmentService({ database, commandBoundary: appointmentCommandBoundary });
 
   app.use(express.json({
     limit: '64kb',
@@ -46,11 +39,9 @@ function createApp({
     webhookToken: infobipWebhookToken,
     webhookHmacSecret: infobipWebhookHmacSecret,
     webhookHmacAlgorithm: infobipWebhookHmacAlgorithm,
-    faqBot,
+    bot,
     captureUnmappedPayloads: captureUnmappedWebhookPayloads,
     allowUnauthenticatedInbound,
-    appointmentCommandBoundary,
-    appointmentService,
   }));
   app.use('/messages', createMessagesRouter({
     client: messagesClient,
